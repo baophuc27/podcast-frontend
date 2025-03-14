@@ -41,6 +41,7 @@ export default function PodcastGenerator() {
   const [editModes, setEditModes] = useState<{ [key: string]: boolean }>({});
   const [editedPodcastData, setEditedPodcastData] = useState<PodcastData[]>([]);
   const [generatedFinal, setGeneratedFinal] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Define speaker profiles
   const SPEAKER_PROFILES: SpeakerProfile[] = [
@@ -75,6 +76,7 @@ export default function PodcastGenerator() {
     setEditModes({});
     setEditedPodcastData([]);
     setGeneratedFinal(false);
+    setError(null); // Reset error state
 
     const urlList = urls.split('\n').filter(url => url.trim().length > 0);
     
@@ -102,7 +104,7 @@ export default function PodcastGenerator() {
 
     try {
       // Make API call to your backend
-      const response = await fetch('http://localhost:8172/generate_podcast_from_urls', {
+      const response = await fetch('/api/podcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -138,6 +140,7 @@ export default function PodcastGenerator() {
       }
     } catch (error) {
       console.error('Error generating podcast:', error);
+      setError('Failed to connect to the podcast generation service. Please check if the backend service is running.');
       setApiResponse({
         status_code: -1,
         data: [],
@@ -183,9 +186,90 @@ export default function PodcastGenerator() {
     }, 3000);
   };
 
+  // Demo mode - simulates a successful response for development without backend
+  const handleDemoMode = () => {
+    setLoading(true);
+    setApiResponse(null);
+    setAudioProgress(0);
+    setEditModes({});
+    setEditedPodcastData([]);
+    setGeneratedFinal(false);
+    setError(null);
+
+    // Simulate loading
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      setAudioProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    // Simulate API response
+    setTimeout(() => {
+      clearInterval(interval);
+      setAudioProgress(100);
+      
+      const demoData = [
+        {
+          speaker: "MC1 (Hương Linh)",
+          content: "Hello and welcome to our podcast! Today we'll be discussing the latest developments in artificial intelligence and how they're shaping our world."
+        },
+        {
+          speaker: "MC2 (Minh Tú)",
+          content: "That's right. AI has been making tremendous progress in recent years, with applications ranging from healthcare to transportation. Let's dive into some of the most interesting breakthroughs."
+        },
+        {
+          speaker: "MC1 (Hương Linh)",
+          content: "One area where AI is making a significant impact is healthcare. Machine learning algorithms are now capable of diagnosing diseases with accuracy comparable to human doctors."
+        },
+        {
+          speaker: "MC2 (Minh Tú)",
+          content: "Indeed. A recent study published in Nature Medicine showed that AI systems could detect certain types of cancer earlier than traditional methods. This could potentially save thousands of lives."
+        }
+      ];
+      
+      setApiResponse({
+        status_code: 0,
+        data: demoData
+      });
+      
+      setEditedPodcastData(demoData);
+      setLoading(false);
+    }, 2000);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8">
       <h1 className="text-3xl font-bold text-blue-600 mb-2">Podcast Generator</h1>
+      
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium">Connection Error</h3>
+              <div className="mt-2 text-sm">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={handleDemoMode}
+                  type="button"
+                  className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                >
+                  Try Demo Mode (No backend required)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="mb-8 bg-gray-50 p-6 rounded-lg shadow-md">
         <div className="mb-4">
@@ -284,13 +368,23 @@ export default function PodcastGenerator() {
           </div>
         </div>
         
-        <button 
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {loading ? 'Generating...' : '🎙️ Generate Draft'}
-        </button>
+        <div className="flex space-x-4">
+          <button 
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          >
+            {loading ? 'Generating...' : '🎙️ Generate Draft'}
+          </button>
+          
+          <button 
+            type="button"
+            onClick={handleDemoMode}
+            className="bg-gray-600 text-white px-6 py-3 rounded-md font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+          >
+            Demo Mode
+          </button>
+        </div>
       </form>
 
       {loading && (
