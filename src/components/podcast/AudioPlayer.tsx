@@ -20,6 +20,7 @@ export default function AudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -31,6 +32,7 @@ export default function AudioPlayer({
 
     const handleDurationChange = () => {
       setDuration(audio.duration);
+      setLoading(false);
     };
 
     const handleEnded = () => {
@@ -39,36 +41,47 @@ export default function AudioPlayer({
       audio.currentTime = 0;
     };
 
+    const handleCanPlay = () => {
+      setLoading(false);
+    };
+
     const handleError = (e: ErrorEvent) => {
       console.error("Audio playback error:", e);
       setError("Unable to play audio. The audio file may not be available.");
       setIsPlaying(false);
+      setLoading(false);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError as EventListener);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError as EventListener);
     };
   }, []);
 
-  // Reset error state when src changes
+  // Reset error state and loading state when src changes
   useEffect(() => {
     setError(null);
+    setLoading(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
   }, [src]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || loading) return;
 
     if (isPlaying) {
       audio.pause();
+      setIsPlaying(false);
     } else {
       // Use a promise to catch play() errors (common in browsers)
       const playPromise = audio.play();
@@ -85,8 +98,6 @@ export default function AudioPlayer({
           });
       }
     }
-
-    setIsPlaying(!isPlaying);
   };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,6 +110,7 @@ export default function AudioPlayer({
   };
 
   const formatTime = (timeInSeconds: number): string => {
+    if (isNaN(timeInSeconds)) return "0:00";
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -120,7 +132,7 @@ export default function AudioPlayer({
           />
 
           {error && (
-            <div className="text-red-500 text-sm mb-2">
+            <div className="text-red-500 dark:text-red-400 text-xs mb-2 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
               {error}
             </div>
           )}
@@ -130,10 +142,19 @@ export default function AudioPlayer({
               <div className="flex items-center gap-2 mb-1">
                 <button
                   onClick={togglePlayPause}
-                  disabled={!!error}
-                  className={`p-2 rounded-full ${error ? 'bg-gray-400' : 'bg-blue-600'} text-white hover:${error ? 'bg-gray-400' : 'bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  disabled={!!error || loading}
+                  className={`p-2 rounded-full flex items-center justify-center transition-colors ${
+                    error || loading 
+                      ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
+                  } text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 >
-                  {isPlaying ? (
+                  {loading ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : isPlaying ? (
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="6" y="4" width="4" height="16"></rect>
                       <rect x="14" y="4" width="4" height="16"></rect>
@@ -152,12 +173,21 @@ export default function AudioPlayer({
                     max={duration || 0}
                     value={currentTime}
                     onChange={handleProgressChange}
-                    disabled={!!error || duration === 0}
-                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${error || duration === 0 ? 'bg-gray-200 opacity-50' : 'bg-gray-200'}`}
+                    disabled={!!error || duration === 0 || loading}
+                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                      error || duration === 0 || loading
+                        ? 'bg-gray-200 dark:bg-gray-700 opacity-50' 
+                        : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                    style={{
+                      background: !error && duration > 0 && !loading
+                        ? `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${(currentTime / duration) * 100}%, #E5E7EB ${(currentTime / duration) * 100}%, #E5E7EB 100%)`
+                        : undefined
+                    }}
                   />
                 </div>
 
-                <div className="text-sm text-gray-600 w-16 text-right">
+                <div className="text-xs text-gray-600 dark:text-gray-400 w-16 text-right font-mono">
                   {formatTime(currentTime)} / {formatTime(duration || 0)}
                 </div>
               </div>
@@ -165,8 +195,8 @@ export default function AudioPlayer({
           )}
         </>
       ) : (
-        <div className="flex items-center justify-center p-4 bg-gray-100 rounded-md">
-          <span className="text-gray-500">Audio not available</span>
+        <div className="flex items-center justify-center p-3 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+          <span className="text-gray-500 dark:text-gray-400 text-sm">Audio not available</span>
         </div>
       )}
     </div>

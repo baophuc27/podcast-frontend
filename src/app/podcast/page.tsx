@@ -6,7 +6,7 @@ import PodcastForm, { PodcastFormData } from '@/components/podcast/PodcastForm';
 import PodcastProgress from '@/components/podcast/PodcastProgress';
 import PodcastScript from '@/components/podcast/PodcastScript';
 import PodcastFinal from '@/components/podcast/PodcastFinal';
-import { generatePodcast, generateFullPodcastAudio } from '@/lib/api/podcast';
+import ErrorAlert from '@/components/ui/ErrorAlert';
 
 export default function PodcastGenerator() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -89,6 +89,7 @@ export default function PodcastGenerator() {
 
   const regenerateFullPodcast = async () => {
     setLoading(true);
+    setAudioProgress(0);
     
     try {
       // In a real implementation, you would use the API client
@@ -111,6 +112,7 @@ export default function PodcastGenerator() {
         clearInterval(interval);
         setAudioProgress(100);
         setGeneratedFinal(true);
+        setFinalAudioUrl('https://example.com/sample-podcast.mp3'); // Placeholder URL
         setLoading(false);
       }, 3000);
     } catch (error) {
@@ -175,34 +177,39 @@ export default function PodcastGenerator() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8">
-      <h1 className="text-3xl font-bold text-blue-600 mb-2">Podcast Generator</h1>
+    <div className="max-w-6xl mx-auto p-4 md:p-8 pt-20">
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-2 flex items-center">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="32" 
+            height="32" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            className="mr-3 text-blue-600"
+          >
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+          </svg>
+          Podcast Generator
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 text-lg max-w-3xl">
+          Transform your content into engaging audio conversations. Simply provide URLs to your articles, choose voice styles, and customize your podcast settings.
+        </p>
+      </div>
       
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-md p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium">Connection Error</h3>
-              <div className="mt-2 text-sm">
-                <p>{error}</p>
-              </div>
-              <div className="mt-4">
-                <button
-                  onClick={handleDemoMode}
-                  type="button"
-                  className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
-                >
-                  Try Demo Mode (No backend required)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ErrorAlert 
+          message={error} 
+          onDemoMode={handleDemoMode} 
+        />
       )}
       
       <PodcastForm 
@@ -216,15 +223,27 @@ export default function PodcastGenerator() {
       )}
 
       {apiResponse && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-8">
           {apiResponse.status_code === 0 ? (
-            <div className="bg-green-50 p-4 rounded-md mb-6">
-              <p className="text-green-700">✅ Success! Podcast generated successfully</p>
+            <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg border border-green-200 dark:border-green-800 flex items-center gap-3">
+              <div className="bg-green-100 dark:bg-green-800 rounded-full p-1">
+                <svg className="h-5 w-5 text-green-600 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <p className="text-green-700 dark:text-green-300 font-medium">Podcast generated successfully!</p>
             </div>
           ) : (
-            <div className="bg-yellow-50 p-4 rounded-md mb-6">
-              <p className="text-yellow-700">⚠️ Status Code: {apiResponse.status_code}</p>
-              {apiResponse.error && <p className="text-red-600 mt-2">{apiResponse.error}</p>}
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
+              <div className="bg-yellow-100 dark:bg-yellow-800 rounded-full p-1">
+                <svg className="h-5 w-5 text-yellow-600 dark:text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-yellow-700 dark:text-yellow-300 font-medium">Status Code: {apiResponse.status_code}</p>
+                {apiResponse.error && <p className="text-red-600 dark:text-red-400 mt-1">{apiResponse.error}</p>}
+              </div>
             </div>
           )}
 
