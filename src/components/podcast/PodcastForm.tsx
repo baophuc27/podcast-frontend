@@ -7,14 +7,13 @@ import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
 
 interface PodcastFormProps {
   onSubmit: (formData: PodcastFormData) => void;
-  onDemoMode: () => void;
   loading: boolean;
 }
 
 export interface PodcastFormData {
   urlList: string[];
   guidelines: string;
-  duration: number;
+  duration: string; // Changed from number to string
   speakerIds: number[];
   podcastType: string;
   maxRevisions: number;
@@ -23,13 +22,12 @@ export interface PodcastFormData {
 
 export default function PodcastForm({ 
   onSubmit, 
-  onDemoMode, 
   loading 
 }: PodcastFormProps) {
   const [urls, setUrls] = useState<string>('');
   const [guidelines, setGuidelines] = useState<string>('');
   const [podcastType, setPodcastType] = useState<string>('Discussion');
-  const [duration, setDuration] = useState<number>(3);
+  const [duration, setDuration] = useState<string>('Medium'); // Changed from number to string
   const [maxRevisions, setMaxRevisions] = useState<number>(1);
   const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([0, 1]);
 
@@ -154,31 +152,29 @@ export default function PodcastForm({
         </div>
         
         <div>
-          <label className="block mb-2 font-medium text-gray-800 dark:text-gray-200">Duration (minutes)</label>
-          <div className="relative mt-1">
-            <input 
-              type="range"
-              min="1"
-              max="10"
-              step="1"
+          <label className="block mb-2 font-medium text-gray-800 dark:text-gray-200">Duration</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <select 
+              className="w-full pl-10 p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
               value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-            />
-            <div className="w-full flex justify-between text-xs px-2 mt-2">
-              <span>1</span>
-              <span>2</span>
-              <span>3</span>
-              <span>4</span>
-              <span>5</span>
-              <span>6</span>
-              <span>7</span>
-              <span>8</span>
-              <span>9</span>
-              <span>10</span>
+              onChange={(e) => setDuration(e.target.value)}
+            >
+              <option value="Short">Short (1-3 minutes)</option>
+              <option value="Medium">Medium (4-7 minutes)</option>
+              <option value="Long">Long (8-10 minutes)</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
+              </svg>
             </div>
           </div>
-          <p className="mt-4 text-sm font-medium text-center text-gray-700 dark:text-gray-300">{duration} {duration === 1 ? 'minute' : 'minutes'}</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Select podcast length</p>
         </div>
         
         <div>
@@ -207,11 +203,11 @@ export default function PodcastForm({
         onChange={setSelectedSpeakers}
       />
       
-      <div className="flex flex-col sm:flex-row gap-4 mt-8">
+      <div className="flex justify-center mt-8">
         <button 
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-w-40"
         >
           {loading ? (
             <>
@@ -243,17 +239,6 @@ export default function PodcastForm({
               Generate Draft
             </>
           )}
-        </button>
-        
-        <button 
-          type="button"
-          onClick={onDemoMode}
-          className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          Demo Mode
         </button>
       </div>
     </form>

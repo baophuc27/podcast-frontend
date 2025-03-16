@@ -17,6 +17,15 @@ export default function PodcastGenerator() {
   const [finalAudioUrl, setFinalAudioUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to convert duration string to number
+  const getDurationInMinutes = (durationString: string): number => {
+    switch (durationString) {
+      case 'Short': return 2;  // 1-3 minutes
+      case 'Long': return 9;   // 8-10 minutes
+      default: return 5;       // Medium (4-7 minutes)
+    }
+  };
+
   const handleFormSubmit = async (formData: PodcastFormData) => {
     setLoading(true);
     setApiResponse(null);
@@ -29,7 +38,7 @@ export default function PodcastGenerator() {
     const payload = {
       input_urls: formData.urlList,
       guidelines: formData.guidelines,
-      duration: formData.duration,
+      duration: getDurationInMinutes(formData.duration),
       speaker_ids: formData.speakerIds,
       podcast_type: formData.podcastType,
       max_revisions: formData.maxRevisions,
@@ -122,62 +131,8 @@ export default function PodcastGenerator() {
     }
   };
 
-  // Demo mode implementation
-  const handleDemoMode = () => {
-    setLoading(true);
-    setApiResponse(null);
-    setAudioProgress(0);
-    setEditedPodcastData([]);
-    setGeneratedFinal(false);
-    setFinalAudioUrl('');
-    setError(null);
-
-    // Simulate loading
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      setAudioProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-      }
-    }, 100);
-
-    // Simulate API response
-    setTimeout(() => {
-      clearInterval(interval);
-      setAudioProgress(100);
-      
-      const demoData = [
-        {
-          speaker: "MC1 (Hương Linh)",
-          content: "Hello and welcome to our podcast! Today we'll be discussing the latest developments in artificial intelligence and how they're shaping our world."
-        },
-        {
-          speaker: "MC2 (Minh Tú)",
-          content: "That's right. AI has been making tremendous progress in recent years, with applications ranging from healthcare to transportation. Let's dive into some of the most interesting breakthroughs."
-        },
-        {
-          speaker: "MC1 (Hương Linh)",
-          content: "One area where AI is making a significant impact is healthcare. Machine learning algorithms are now capable of diagnosing diseases with accuracy comparable to human doctors."
-        },
-        {
-          speaker: "MC2 (Minh Tú)",
-          content: "Indeed. A recent study published in Nature Medicine showed that AI systems could detect certain types of cancer earlier than traditional methods. This could potentially save thousands of lives."
-        }
-      ];
-      
-      setApiResponse({
-        status_code: 0,
-        data: demoData
-      });
-      
-      setEditedPodcastData(demoData);
-      setLoading(false);
-    }, 2000);
-  };
-
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 pt-20">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 pt-12">
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-2 flex items-center">
           <svg 
@@ -206,15 +161,11 @@ export default function PodcastGenerator() {
       </div>
       
       {error && (
-        <ErrorAlert 
-          message={error} 
-          onDemoMode={handleDemoMode} 
-        />
+        <ErrorAlert message={error} />
       )}
       
       <PodcastForm 
-        onSubmit={handleFormSubmit} 
-        onDemoMode={handleDemoMode}
+        onSubmit={handleFormSubmit}
         loading={loading}
       />
 
