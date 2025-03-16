@@ -4,7 +4,7 @@ import { useState, FormEvent } from 'react';
 import { SpeakerProfile } from '@/types/podcast';
 import SpeakerSelection from './SpeakerSelection';
 import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
-import PodcastFormatSelector, { PODCAST_FORMATS, QUALITY_SETTINGS } from './PodcastFormatSelector';
+import PodcastStyleSelector, { PODCAST_STYLES } from './PodcastStyleSelector';
 
 interface PodcastFormProps {
   onSubmit: (formData: PodcastFormData) => void;
@@ -28,20 +28,22 @@ export default function PodcastForm({
   const [urls, setUrls] = useState<string>('');
   const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([0, 1]);
   
-  // Format and quality states
-  const [guidelines, setGuidelines] = useState<string>(PODCAST_FORMATS[0].guidelines);
-  const [podcastType, setPodcastType] = useState<string>(PODCAST_FORMATS[0].podcastType);
-  const [duration, setDuration] = useState<string>(PODCAST_FORMATS[0].duration);
-  const [maxRevisions, setMaxRevisions] = useState<number>(QUALITY_SETTINGS[1].maxRevisions);
+  // Style states (unified from format and quality)
+  const [guidelines, setGuidelines] = useState<string>('');
+  const [podcastType, setPodcastType] = useState<string>(PODCAST_STYLES[0].podcastType);
+  const [duration, setDuration] = useState<string>(PODCAST_STYLES[0].duration);
+  const [maxRevisions, setMaxRevisions] = useState<number>(PODCAST_STYLES[0].maxRevisions);
 
-  const handleFormatChange = (format: { podcastType: string; duration: string; guidelines: string }) => {
-    setPodcastType(format.podcastType);
-    setDuration(format.duration);
-    setGuidelines(format.guidelines);
-  };
-
-  const handleQualityChange = (quality: { maxRevisions: number }) => {
-    setMaxRevisions(quality.maxRevisions);
+  const handleStyleChange = (style: { 
+    podcastType: string; 
+    duration: string; 
+    guidelines: string;
+    maxRevisions: number;
+  }) => {
+    setPodcastType(style.podcastType);
+    setDuration(style.duration);
+    setGuidelines(style.guidelines);
+    setMaxRevisions(style.maxRevisions);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -117,11 +119,8 @@ export default function PodcastForm({
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Add URLs to articles you want to convert into podcast content</p>
       </div>
       
-      {/* New Format & Quality Selector */}
-      <PodcastFormatSelector 
-        onFormatChange={handleFormatChange}
-        onQualityChange={handleQualityChange}
-      />
+      {/* Unified Style Selector */}
+      <PodcastStyleSelector onStyleChange={handleStyleChange} />
       
       <SpeakerSelection 
         selectedSpeakers={selectedSpeakers}
