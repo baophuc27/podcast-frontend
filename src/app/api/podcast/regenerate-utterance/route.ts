@@ -1,13 +1,123 @@
 // src/app/api/podcast/regenerate-utterance/route.ts
 import { NextRequest } from 'next/server';
 import { PodcastData } from '@/types/podcast';
-import { callBackendService } from '@/lib/api/backend';
+import * as fs from 'fs';
+import * as path from 'path';
+import { splitLongUtterance } from '@/lib/utils/podcast';
 
 type RegenerateUtterancePayload = {
   podcast_data: PodcastData[];
   idx: number;
   podcast_dir: string;
 };
+
+// Function to process text using TTS API
+async function processTTS(text: string, speakerId: number, outputFilename: string): Promise<[boolean, string | null]> {
+  const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
+  
+  // Set speed based on speaker_id (following the Python reference)
+  const speed = speakerId === 1 ? 1.2 : 1;
+  
+  const payload = {
+    text: text,
+    speed: speed,
+    speaker_id: speakerId,
+    encode_type: 0
+  };
+  
+  try {
+    // Make request to TTS API
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      return [false, `API responded with status: ${response.status}`];
+    }
+    
+    const result = await response.json();
+    
+    if (result.error_code === 0) {
+      // Download the WAV file
+      const wavUrl = result.url;
+      if (wavUrl) {
+        const wavResponse = await fetch(wavUrl);
+        
+        if (wavResponse.ok) {
+          // Ensure the directory exists
+          const dir = path.dirname(outputFilename);
+          fs.mkdirSync(dir, { recursive: true });
+          
+          // Get the audio file content
+          const audioBuffer = Buffer.from(await wavResponse.arrayBuffer());
+          
+          // Write the file
+          fs.writeFileSync(outputFilename, audioBuffer);
+          return [true, null];
+        } else {
+          return [false, `Failed to download WAV file: ${wavResponse.status}`];
+        }
+      } else {
+        return [false, "No URL found in the API response"];
+      }
+    } else {
+      return [false, `API call failed: ${JSON.stringify(result)}`];
+    }
+  } catch (error) {
+    return [false, `Error processing TTS: ${error instanceof Error ? error.message : String(error)}`];
+  }
+}
+
+// Function to regenerate audio for a single utterance
+async function regenerateSingleUtterance(podcastData: PodcastData[], idx: number, podcastDir: string): Promise<string[]> {
+  if (!podcastData || idx >= podcastData.length) {
+    return [];
+  }
+  
+  // Get the item to regenerate
+  const item = podcastData[idx];
+  const speaker = item.speaker;
+  const content = item.content;
+  
+  // Determine speaker ID for TTS
+  let ttsSpeakerId = 1; // Default to MC1/female
+  if (speaker.includes("MC1")) {
+    ttsSpeakerId = 1; // Female voice
+  } else if (speaker.includes("MC2")) {
+    ttsSpeakerId = 2; // Male voice
+  }
+  
+  // Split long content into manageable chunks
+  const chunks = splitLongUtterance(content);
+  const chunkAudioFiles: string[] = [];
+  
+  // Process each chunk
+  for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
+    const chunk = chunks[chunkIdx];
+    
+    // Use a unique filename to avoid overwriting existing files
+    const outputFile = path.join(
+      podcastDir, 
+      `${speaker.toLowerCase().replace(' ', '_')}_${idx}_${chunkIdx}_edited_${Date.now()}.wav`
+    );
+    
+    // Process TTS for this chunk
+    const [success, error] = await processTTS(chunk, ttsSpeakerId, outputFile);
+    
+    if (success) {
+      chunkAudioFiles.push(outputFile);
+    } else {
+      console.error(`Failed to process chunk ${chunkIdx}: ${error}`);
+    }
+  }
+  
+  return chunkAudioFiles;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,13 +126,30 @@ export async function POST(request: NextRequest) {
     console.log("Regenerate utterance API route called for idx:", body.idx);
     console.log("Using podcast dir:", body.podcast_dir);
     
-    // For single utterance regeneration, we use the TTS API indirectly through the main backend
-    // This calls a function that uses 'https://kiki-tts-engine.tts.zalo.ai/generate_audio'
-    // But the request itself goes to the main backend which handles the TTS API call
-    return callBackendService({
-      endpoint: 'regenerate_utterance',
-      payload: body,
-      host: 'http://localhost:8172' // Explicitly using the main backend host
+    // Ensure the podcast directory exists
+    const podcastDir = path.join(process.cwd(), body.podcast_dir);
+    if (!fs.existsSync(podcastDir)) {
+      console.log(`Creating podcast directory: ${podcastDir}`);
+      fs.mkdirSync(podcastDir, { recursive: true });
+    }
+    
+    // Call the direct implementation to regenerate the utterance
+    const audioFiles = await regenerateSingleUtterance(
+      body.podcast_data,
+      body.idx,
+      podcastDir
+    );
+    
+    console.log(`Generated ${audioFiles.length} audio files`);
+    
+    // Return paths relative to the API route
+    const relativePaths = audioFiles.map(file => {
+      // Convert absolute paths to relative paths for the frontend
+      return file.replace(process.cwd(), '').replace(/\\/g, '/');
+    });
+    
+    return Response.json({
+      audio_files: relativePaths
     });
     
   } catch (error) {

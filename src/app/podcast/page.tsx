@@ -1,3 +1,4 @@
+// src/app/podcast/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -100,10 +101,18 @@ export default function PodcastGenerator() {
         
         // Store the podcast directory - this is critical
         if (responseData.podcast_dir) {
-          setPodcastDir(responseData.podcast_dir);
-          console.log("Setting podcast directory:", responseData.podcast_dir);
+          const dirPath = responseData.podcast_dir;
+          // Ensure the podcast directory is properly formatted
+          // In case the API returns Windows-style paths with backslashes
+          const normalizedPath = dirPath.replace(/\\/g, '/');
+          setPodcastDir(normalizedPath);
+          console.log("Setting podcast directory:", normalizedPath);
+          
+          // Store it in the response object as well to ensure consistency
+          responseData.podcast_dir = normalizedPath;
         } else {
           console.warn("Warning: No podcast_dir received from API");
+          setError("Backend did not provide a podcast directory path. Some features may not work correctly.");
         }
         
         setApiResponse(responseData);
@@ -133,6 +142,11 @@ export default function PodcastGenerator() {
   };
 
   const regenerateFullPodcast = async () => {
+    if (!podcastDir) {
+      setError("Cannot generate podcast: podcast directory not available");
+      return;
+    }
+    
     setLoading(true);
     setAudioProgress(0);
     setError(null);

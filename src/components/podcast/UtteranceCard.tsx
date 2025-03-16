@@ -11,6 +11,7 @@ interface UtteranceCardProps {
   onUpdate: (index: number, newContent: string) => void;
   onRegenerateAudio?: () => void;
   isRegenerating?: boolean;
+  disableRegeneration?: boolean;
 }
 
 export default function UtteranceCard({ 
@@ -19,7 +20,8 @@ export default function UtteranceCard({
   audioUrl, 
   onUpdate,
   onRegenerateAudio,
-  isRegenerating = false
+  isRegenerating = false,
+  disableRegeneration = false
 }: UtteranceCardProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(item.content);
@@ -151,8 +153,9 @@ export default function UtteranceCard({
                 {onRegenerateAudio && (
                   <button
                     onClick={onRegenerateAudio}
-                    disabled={isRegenerating}
+                    disabled={isRegenerating || disableRegeneration}
                     className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={disableRegeneration ? "Podcast directory not available. Audio regeneration is disabled." : ""}
                   >
                     {isRegenerating ? (
                       <>

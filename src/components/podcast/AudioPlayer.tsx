@@ -1,3 +1,4 @@
+// src/components/podcast/AudioPlayer.tsx
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -38,7 +39,7 @@ export default function AudioPlayer({
     }
     
     // For server-side paths, convert to a proper URL
-    // Convert backslashes to forward slashes
+    // Convert backslashes to forward slashes (especially important for Windows paths)
     const cleanPath = path.replace(/\\/g, '/');
     
     // If the path contains 'podcast_audio', extract the relevant parts
@@ -49,8 +50,34 @@ export default function AudioPlayer({
       }
     }
     
-    // If we couldn't transform the path, return the original
-    console.log(`Using audio path: ${path}`);
+    // For paths that don't contain podcast_audio, try to extract what might be after the podcast directory
+    const pathSegments = cleanPath.split('/');
+    // Look for segments that might be part of the audio path structure
+    // Typically these would be in format like 'MC1_0_0.wav'
+    const audioFileMatch = pathSegments.find(segment => 
+      /^(MC\d+)_\d+(_\d+)?\.wav/i.test(segment)
+    );
+    
+    if (audioFileMatch) {
+      // Find the index of this segment
+      const audioFileIndex = pathSegments.indexOf(audioFileMatch);
+      // Get everything from that point forward
+      if (audioFileIndex > 0) {
+        const relevantPath = pathSegments.slice(audioFileIndex - 1).join('/');
+        return `/api/audio/${relevantPath}`;
+      }
+    }
+    
+    // If we couldn't transform the path in a known way, 
+    // try to make a good guess based on the structure of the path
+    if (pathSegments.length > 2) {
+      // Take the last few segments which likely contain the actual audio file
+      const lastSegments = pathSegments.slice(-2).join('/');
+      return `/api/audio/${lastSegments}`;
+    }
+    
+    // If all else fails, use the original path but warn in console
+    console.log(`Could not transform path, using as is: ${path}`);
     return path;
   };
 

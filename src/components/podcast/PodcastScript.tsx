@@ -25,10 +25,26 @@ export default function PodcastScript({
 }: PodcastScriptProps) {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [updatedAudioFiles, setUpdatedAudioFiles] = useState<{ [key: string]: string[] }>({});
+  const [directoryStatus, setDirectoryStatus] = useState<'valid' | 'invalid' | 'checking'>('checking');
+  const [error, setError] = useState<string | null>(null);
+  const [effectivePodcastDir, setEffectivePodcastDir] = useState<string>('');
   
-  // Debug log for podcast directory
+  // Debug log for podcast directory and set a fallback if needed
   useEffect(() => {
     console.log("PodcastScript received podcastDir:", podcastDir);
+    
+    // Check if the podcast directory is valid (not empty)
+    if (podcastDir && podcastDir.trim().length > 0) {
+      setDirectoryStatus('valid');
+      setEffectivePodcastDir(podcastDir);
+      console.log("Using provided podcast directory:", podcastDir);
+    } else {
+      // Generate a fallback directory name based on timestamp
+      const fallbackDir = `podcast_audio/podcast_${Date.now()}`;
+      setEffectivePodcastDir(fallbackDir);
+      console.log("Using fallback podcast directory:", fallbackDir);
+      setDirectoryStatus('valid'); // We'll treat this as valid since we have a fallback
+    }
   }, [podcastDir]);
   
   // Use the combined audio files (original + any updates)
@@ -41,17 +57,18 @@ export default function PodcastScript({
 
   // Function to regenerate a specific utterance's audio
   const handleRegenerateAudio = async (index: number) => {
-    if (!podcastDir) {
-      console.error("Cannot regenerate audio: podcast directory not available");
+    if (directoryStatus !== 'valid') {
+      setError("Cannot regenerate audio: podcast directory not available");
       return;
     }
     
-    console.log(`Regenerating audio for utterance ${index} using directory: ${podcastDir}`);
+    console.log(`Regenerating audio for utterance ${index} using directory: ${effectivePodcastDir}`);
     setRegeneratingIndex(index);
+    setError(null);
     
     try {
       // Call the API to regenerate this utterance
-      const newAudioFiles = await regenerateUtterance(podcastData, index, podcastDir);
+      const newAudioFiles = await regenerateUtterance(podcastData, index, effectivePodcastDir);
       
       console.log("Regenerated audio files:", newAudioFiles);
       
@@ -61,14 +78,20 @@ export default function PodcastScript({
           ...prev,
           [`utterance_${index}`]: newAudioFiles
         }));
+      } else {
+        setError("No audio files were returned. The regeneration may have failed.");
       }
       
       setRegeneratingIndex(null);
     } catch (error) {
       console.error("Error regenerating utterance:", error);
+      setError(`Error regenerating audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setRegeneratingIndex(null);
     }
   };
+
+  // Check if a final generation button should be enabled
+  const isGenerateFinalEnabled = directoryStatus === 'valid' && !loading && !regeneratingIndex;
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700 p-6 transition-all animate-fade-in">
@@ -82,9 +105,17 @@ export default function PodcastScript({
         
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={onGenerateFinal}
-            disabled={loading}
+            onClick={() => {
+              // Update parent component with the effective podcast directory
+              if (effectivePodcastDir) {
+                onGenerateFinal();
+              } else {
+                setError("Cannot generate final audio: No podcast directory available");
+              }
+            }}
+            disabled={!isGenerateFinalEnabled}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md"
+            title={directoryStatus !== 'valid' ? "Podcast directory not available" : ""}
           >
             {loading ? (
               <>
@@ -116,30 +147,13 @@ export default function PodcastScript({
         </div>
       </div>
       
-      <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-600">
-        <div className="flex items-start gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Click on any speaker's text to edit the content. When you're satisfied with all utterances, click "Generate Final Audio" to create the complete podcast.
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-              Total utterances: <span className="font-medium">{podcastData.length}</span>
-              {podcastDir ? (
-                <span className="ml-3 text-green-600 dark:text-green-400">
-                  ✓ Podcast directory available
-                </span>
-              ) : (
-                <span className="ml-3 text-red-600 dark:text-red-400">
-                  ✗ Podcast directory not available
-                </span>
-              )}
-            </p>
-          </div>
+
+      
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4 text-red-700 dark:text-red-300 text-sm">
+          {error}
         </div>
-      </div>
+      )}
       
       <div className="space-y-4 mb-6">
         {podcastData.map((item, idx) => (
@@ -151,6 +165,7 @@ export default function PodcastScript({
             onUpdate={onUpdate}
             onRegenerateAudio={() => handleRegenerateAudio(idx)}
             isRegenerating={regeneratingIndex === idx}
+            disableRegeneration={directoryStatus !== 'valid'}
           />
         ))}
       </div>

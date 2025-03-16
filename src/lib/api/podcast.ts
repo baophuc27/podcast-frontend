@@ -89,10 +89,14 @@ export async function regenerateUtterance(
  * 'http://10.30.78.48:8282/gen-audio'
  */
 export async function generateFullPodcastAudio(
-  podcastData: PodcastData[]
+  podcastData: PodcastData[],
+  podcastDir?: string
 ): Promise<{ success: boolean; audioUrl?: string; error?: string }> {
   try {
     console.log("Generating full podcast audio with data:", podcastData.length, "utterances");
+    if (podcastDir) {
+      console.log("Using podcast directory:", podcastDir);
+    }
     
     // Format the podcast data to match what the backend expects for the gen-audio endpoint
     const formattedData = podcastData.map(item => {
@@ -110,10 +114,15 @@ export async function generateFullPodcastAudio(
       };
     });
     
+    // Create the payload, including podcast_dir if provided
+    const payload = podcastDir ? 
+      { podcast_data: formattedData, podcast_dir: podcastDir } : 
+      formattedData;
+    
     const response = await fetch('/api/podcast/generate-full', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formattedData)
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
@@ -139,4 +148,3 @@ export async function generateFullPodcastAudio(
       error: error instanceof Error ? error.message : 'Unknown error occurred' 
     };
   }
-}
