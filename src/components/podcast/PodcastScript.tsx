@@ -1,3 +1,4 @@
+// src/components/podcast/PodcastScript.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -107,37 +108,6 @@ export default function PodcastScript({
         
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => {
-              // Update parent component with the effective podcast directory
-              if (effectivePodcastDir) {
-                onGenerateFinal();
-              } else {
-                setError("Cannot generate final audio: No podcast directory available");
-              }
-            }}
-            disabled={!isGenerateFinalEnabled}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md"
-            title={directoryStatus !== 'valid' ? "Podcast directory not available" : ""}
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-                Generate Final Audio
-              </>
-            )}
-          </button>
-          
-          <button
             onClick={handleDownloadScript}
             className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-600"
           >
@@ -168,6 +138,39 @@ export default function PodcastScript({
             disableRegeneration={directoryStatus !== 'valid'}
           />
         ))}
+      </div>
+      
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={() => {
+            // Update parent component with the effective podcast directory
+            if (effectivePodcastDir) {
+              onGenerateFinal();
+            } else {
+              setError("Cannot generate final audio: No podcast directory available");
+            }
+          }}
+          disabled={!isGenerateFinalEnabled}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md w-full max-w-md"
+          title={directoryStatus !== 'valid' ? "Podcast directory not available" : ""}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Generating Final Podcast...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Generate Final Podcast Audio
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

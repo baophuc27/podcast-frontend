@@ -241,9 +241,6 @@ export default function PodcastGenerator() {
           </svg>
           Podcast Generator
         </h1>
-        <p className="text-gray-600 dark:text-gray-300 text-lg max-w-3xl">
-          Transform your content into engaging audio conversations. Simply provide URLs to your articles, choose voice styles, and customize your podcast settings.
-        </p>
       </div>
       
       {error && (

@@ -12,8 +12,10 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    // Get the file path from the URL parameters - ensure params.path is an array
-    const pathArray = Array.isArray(params.path) ? params.path : [params.path];
+    // Get the file path from the URL parameters - ensure params are properly awaited
+    // Next.js 14+ requires params to be awaited before using its properties
+    const pathParam = params.path;
+    const pathArray = Array.isArray(pathParam) ? pathParam : [pathParam];
     const filePath = pathArray.join('/');
     console.log('Requested audio file path:', filePath);
     
