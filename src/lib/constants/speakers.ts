@@ -3,7 +3,7 @@ import { SpeakerProfile } from '@/types/podcast';
 export const SPEAKER_PROFILES: SpeakerProfile[] = [
   {
     id: 0,
-    name: "Hương Linh",
+    name: "Mai Lan",
     gender: "Female",
     age: 20,
     mc_guidelines: "+ Explanatory \n+ Comparative\n+ Reflective"

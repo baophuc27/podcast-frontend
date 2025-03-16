@@ -21,8 +21,8 @@ export default function PodcastGenerator() {
   const getDurationInMinutes = (durationString: string): number => {
     switch (durationString) {
       case 'Short': return 2;  // 1-3 minutes
-      case 'Long': return 9;   // 8-10 minutes
-      default: return 5;       // Medium (4-7 minutes)
+      case 'Long': return 7;   // 8-10 minutes
+      default: return 4;       // Medium (4-7 minutes)
     }
   };
 
