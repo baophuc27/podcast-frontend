@@ -22,6 +22,7 @@ export default function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const previousSrcRef = useRef(src);
 
   // Process the source URL - using useMemo to avoid recalculation on every render
   const audioSrc = useMemo(() => {
@@ -54,16 +55,21 @@ export default function AudioPlayer({
 
   // Reset states when the src prop changes
   useEffect(() => {
-    console.log(`Audio source changed to: ${src}`);
-    console.log(`Processed to: ${audioSrc}`);
-    
-    setError(null);
-    setLoading(true);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    
-    if (!audioSrc) {
-      setLoading(false);
+    // Only update if the source has actually changed
+    if (src !== previousSrcRef.current) {
+      console.log(`Audio source changed to: ${src}`);
+      console.log(`Processed to: ${audioSrc}`);
+      
+      setError(null);
+      setLoading(true);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      
+      if (!audioSrc) {
+        setLoading(false);
+      }
+      
+      previousSrcRef.current = src;
     }
   }, [src, audioSrc]);
 

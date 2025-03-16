@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PodcastData } from '@/types/podcast';
 import AudioPlayer from './AudioPlayer';
 
@@ -25,10 +25,14 @@ export default function UtteranceCard({
 }: UtteranceCardProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(item.content);
+  const previousContentRef = useRef(item.content);
   
-  // Update content if it changes from parent
+  // Update content if it changes from parent - with fix to prevent infinite loops
   useEffect(() => {
-    setEditedContent(item.content);
+    if (item.content !== previousContentRef.current) {
+      setEditedContent(item.content);
+      previousContentRef.current = item.content;
+    }
   }, [item.content]);
 
   const handleSave = () => {

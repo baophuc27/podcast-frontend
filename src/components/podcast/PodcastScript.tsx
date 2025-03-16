@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PodcastData } from '@/types/podcast';
 import UtteranceCard from './UtteranceCard';
 import { generateScriptContent, createDownloadLink } from '@/lib/utils/podcast';
@@ -29,31 +29,25 @@ export default function PodcastScript({
   const [error, setError] = useState<string | null>(null);
   const [effectivePodcastDir, setEffectivePodcastDir] = useState<string>('');
   
-  // Debug log for podcast directory and set a fallback if needed
+  // Initialize directory once on component mount
   useEffect(() => {
-    console.log("PodcastScript received podcastDir:", podcastDir);
-    console.log("Initial audioFiles:", audioFiles);
+    // Only run directory initialization logic once on mount
+    console.log("PodcastScript initializing with podcastDir:", podcastDir);
     
-    // Check if the podcast directory is valid (not empty)
     if (podcastDir && podcastDir.trim().length > 0) {
       setDirectoryStatus('valid');
       setEffectivePodcastDir(podcastDir);
-      console.log("Using provided podcast directory:", podcastDir);
     } else {
-      // Generate a fallback directory name based on timestamp
       const fallbackDir = `podcast_audio/podcast_${Date.now()}`;
+      setDirectoryStatus('valid');
       setEffectivePodcastDir(fallbackDir);
-      console.log("Using fallback podcast directory:", fallbackDir);
-      setDirectoryStatus('valid'); // We'll treat this as valid since we have a fallback
     }
     
-    // Debug check all available audio files
+    // Debug logging for audio files
     if (audioFiles) {
-      Object.entries(audioFiles).forEach(([key, files]) => {
-        console.log(`Audio for ${key}:`, files);
-      });
+      console.log("Initial audioFiles:", Object.keys(audioFiles).length);
     }
-  }, [podcastDir, audioFiles]);
+  }, []); // Empty dependency array means this only runs once on mount
   
   // Use the combined audio files (original + any updates)
   const currentAudioFiles = { ...audioFiles, ...updatedAudioFiles };
@@ -154,8 +148,6 @@ export default function PodcastScript({
           </button>
         </div>
       </div>
-      
-
       
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4 text-red-700 dark:text-red-300 text-sm">

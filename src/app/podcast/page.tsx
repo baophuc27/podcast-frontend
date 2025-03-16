@@ -22,16 +22,17 @@ export default function PodcastGenerator() {
 
   // Debug podcast directory changes
   useEffect(() => {
-    console.log("Podcast directory set to:", podcastDir);
-  }, [podcastDir]);
-  
-  // Debug audio files when they're updated
-  useEffect(() => {
     if (apiResponse && apiResponse.audio_files) {
       console.log("Audio files available:", apiResponse.audio_files);
       console.log("Individual files (raw):", apiResponse.individual_files);
     }
   }, [apiResponse]);
+  
+  // Improved podcast directory handling
+  useEffect(() => {
+    console.log("Podcast directory set to:", podcastDir);
+  }, [podcastDir]);
+  
 
   // Helper function to convert duration string to number
   const getDurationInMinutes = (durationString: string): number => {
@@ -173,7 +174,6 @@ export default function PodcastGenerator() {
     setLoading(true);
     setAudioProgress(0);
     setError(null);
-    
     try {
       // Start progress animation
       let progress = 0;

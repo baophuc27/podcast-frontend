@@ -12,11 +12,13 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const previousUrlRef = useRef(audioUrl);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Only set up event handlers once
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
     };
@@ -47,6 +49,16 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('canplay', handleCanPlay);
     };
+  }, []); // Empty dependency array - only run once
+
+  // Handle audioUrl changes separately
+  useEffect(() => {
+    if (audioUrl !== previousUrlRef.current) {
+      setLoading(true);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      previousUrlRef.current = audioUrl;
+    }
   }, [audioUrl]);
 
   const togglePlayPause = () => {
