@@ -163,3 +163,56 @@ export async function generateFullPodcastAudio(
     };
   }
 }
+
+// Add this function to src/lib/api/podcast.ts
+export async function generateBatchAudio(
+  podcastData: PodcastData[],
+  podcastDir: string
+): Promise<{
+  success: boolean;
+  audioFiles?: { [key: string]: string[] };
+  individualFiles?: { [key: string]: string[] };
+  error?: string;
+}> {
+  try {
+    console.log("Generating batch audio with data:", podcastData.length, "utterances");
+    console.log("Using podcast directory:", podcastDir);
+    
+    const payload = {
+      podcast_data: podcastData,
+      podcast_dir: podcastDir
+    };
+    
+    const response = await fetch('/api/podcast/generate-batch-audio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API call failed with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Batch audio generation response:", data);
+    
+    if (data.status_code === 0) {
+      return { 
+        success: true, 
+        audioFiles: data.audio_files, 
+        individualFiles: data.individual_files 
+      };
+    } else {
+      return { 
+        success: false, 
+        error: data.error || 'Failed to generate batch audio' 
+      };
+    }
+  } catch (error) {
+    console.error('Error generating batch audio:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+}

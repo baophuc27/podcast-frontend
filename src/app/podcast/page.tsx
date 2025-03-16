@@ -8,7 +8,7 @@ import PodcastProgress from '@/components/podcast/PodcastProgress';
 import PodcastScript from '@/components/podcast/PodcastScript';
 import PodcastFinal from '@/components/podcast/PodcastFinal';
 import ErrorAlert from '@/components/ui/ErrorAlert';
-import { generateFullPodcastAudio } from '@/lib/api/podcast';
+import { generateFullPodcastAudio, generateBatchAudio } from '@/lib/api/podcast';
 
 export default function PodcastGenerator() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,7 +52,7 @@ export default function PodcastGenerator() {
     setFinalAudioUrl('');
     setError(null);
     setPodcastDir('');
-
+  
     const payload = {
       input_urls: formData.urlList,
       guidelines: formData.guidelines,
@@ -62,91 +62,62 @@ export default function PodcastGenerator() {
       max_revisions: formData.maxRevisions,
       speaker_profiles: formData.speakerProfiles
     };
-
+  
     try {
-      // Start progress animation
+      // Start progress animation for script generation (0-50%)
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 2;
-        setAudioProgress(Math.min(progress, 95)); // Cap at 95% until we get the actual response
-        if (progress >= 95) {
+        progress += 1;
+        setAudioProgress(Math.min(progress, 45)); // Cap at 45% for script generation
+        if (progress >= 45) {
           clearInterval(interval);
         }
       }, 300);
-
-      // Make API call to your backend
+  
+      // Make API call to backend to generate script
       const response = await fetch('/api/podcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
+  
       clearInterval(interval);
       const responseData: APIResponse = await response.json();
-      console.log("API Response:", responseData);
+      console.log("Script generation response:", responseData);
       
-      // If successful
       if (responseData.status_code === 0) {
-        setAudioProgress(100);
+        // Script generated successfully, now generate audio
+        setAudioProgress(50);
         
-        // Process audio files to match the format expected by components
-        // The API returns individual_files in a format like:
-        // { "MC1_0": ["path1", "path2"], "MC2_1": ["path3"] }
+        // Create a podcast directory if one wasn't provided
+        const dirPath = responseData.podcast_dir || `podcast_audio/podcast_${Date.now()}`;
+        setPodcastDir(dirPath);
+        console.log("Using podcast directory:", dirPath);
         
-        // Convert to the format expected by our components:
-        // { "utterance_0": ["path1", "path2"], "utterance_1": ["path3"] }
-        const processedAudioFiles: { [key: string]: string[] } = {};
+        // Generate audio for all utterances
+        const audioResult = await generateBatchAudio(responseData.data, dirPath);
         
-        if (responseData.individual_files) {
-          Object.entries(responseData.individual_files).forEach(([key, paths]) => {
-            // Extract the utterance index from the key (e.g., "MC1_0" -> "0")
-            const utteranceIdx = key.split('_')[1];
-            
-            // Format paths to ensure they work correctly
-            const formattedPaths = (paths as string[]).map(path => {
-              // Convert backslashes to forward slashes
-              let formattedPath = path.replace(/\\/g, '/');
-              
-              // Make sure the path is absolute for the API
-              if (!formattedPath.startsWith('/') && !formattedPath.startsWith('http')) {
-                formattedPath = '/' + formattedPath;
-              }
-              
-              return formattedPath;
-            });
-            
-            processedAudioFiles[`utterance_${utteranceIdx}`] = formattedPaths;
-            console.log(`Processed audio for utterance_${utteranceIdx}:`, formattedPaths);
-          });
+        if (audioResult.success && audioResult.audioFiles) {
+          // Update the response with generated audio files
+          responseData.audio_files = audioResult.audioFiles;
+          responseData.individual_files = audioResult.individualFiles;
+          responseData.podcast_dir = dirPath;
           
-          // Update the response with processed audio files
-          responseData.audio_files = processedAudioFiles;
-        }
-        
-        // Store the podcast directory - this is critical
-        if (responseData.podcast_dir) {
-          const dirPath = responseData.podcast_dir;
-          // Ensure the podcast directory is properly formatted
-          // In case the API returns Windows-style paths with backslashes
-          const normalizedPath = dirPath.replace(/\\/g, '/');
-          setPodcastDir(normalizedPath);
-          console.log("Setting podcast directory:", normalizedPath);
-          
-          // Store it in the response object as well to ensure consistency
-          responseData.podcast_dir = normalizedPath;
+          setAudioProgress(100);
+          setApiResponse(responseData);
+          setEditedPodcastData(responseData.data);
         } else {
-          console.warn("Warning: No podcast_dir received from API");
-          setError("Backend did not provide a podcast directory path. Some features may not work correctly.");
+          setError(audioResult.error || 'Failed to generate audio for utterances');
+          setAudioProgress(100);
+          setApiResponse(responseData);
+          setEditedPodcastData(responseData.data);
         }
-        
-        setApiResponse(responseData);
-        setEditedPodcastData(responseData.data);
-        setLoading(false);
       } else {
         setApiResponse(responseData);
-        setLoading(false);
         setError(responseData.error || 'An error occurred during podcast generation');
       }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error generating podcast:', error);
       setError('Failed to connect to the podcast generation service. Please check if the backend service is running.');
@@ -158,7 +129,6 @@ export default function PodcastGenerator() {
       setLoading(false);
     }
   };
-
   const updateContent = (idx: number, newContent: string) => {
     const updatedData = [...editedPodcastData];
     updatedData[idx].content = newContent;
