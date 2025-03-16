@@ -12,15 +12,18 @@ type RegenerateUtterancePayload = {
 };
 
 // Function to process text using TTS API
-async function processTTS(text: string, speakerId: number, outputFilename: string): Promise<[boolean, string | null]> {
+async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null]> {
   const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
   
-  // Set speed based on speaker_id (following the Python reference)
-  const speed = speakerId === 1 ? 1.2 : 1;
+  // Ensure speed is within valid range (0.5 to 1.5)
+  const validSpeed = Math.max(0.5, Math.min(1.5, speed));
+  
+  // Log the speed value being used
+  console.log(`Processing TTS with speed: ${validSpeed} for speaker ID: ${speakerId}`);
   
   const payload = {
     text: text,
-    speed: speed,
+    speed: validSpeed, // Use validated speed parameter
     speaker_id: speakerId,
     encode_type: 0
   };
@@ -86,10 +89,22 @@ async function regenerateSingleUtterance(podcastData: PodcastData[], idx: number
   
   // Determine speaker ID for TTS
   let ttsSpeakerId = 1; // Default to MC1/female
+  let speed = 1.0; // Default speed
+  
   if (speaker.includes("MC1")) {
     ttsSpeakerId = 1; // Female voice
+    // Check if there's a speed property in speaker data
+    if (item.speakerProfile && typeof item.speakerProfile.speed === 'number') {
+      speed = item.speakerProfile.speed;
+      console.log(`Using MC1 speaker speed from profile: ${speed}`);
+    }
   } else if (speaker.includes("MC2")) {
     ttsSpeakerId = 2; // Male voice
+    // Check if there's a speed property in speaker data
+    if (item.speakerProfile && typeof item.speakerProfile.speed === 'number') {
+      speed = item.speakerProfile.speed;
+      console.log(`Using MC2 speaker speed from profile: ${speed}`);
+    }
   }
   
   // Split long content into manageable chunks
@@ -106,8 +121,8 @@ async function regenerateSingleUtterance(podcastData: PodcastData[], idx: number
       `${speaker.toLowerCase().replace(' ', '_')}_${idx}_${chunkIdx}_edited_${Date.now()}.wav`
     );
     
-    // Process TTS for this chunk
-    const [success, error] = await processTTS(chunk, ttsSpeakerId, outputFile);
+    // Process TTS for this chunk with speed parameter
+    const [success, error] = await processTTS(chunk, ttsSpeakerId, outputFile, speed);
     
     if (success) {
       chunkAudioFiles.push(outputFile);

@@ -53,6 +53,7 @@ export default function PodcastGenerator() {
     setError(null);
     setPodcastDir('');
   
+    // Enhanced payload with speaker speeds
     const payload = {
       input_urls: formData.urlList,
       guidelines: formData.guidelines,
@@ -60,7 +61,8 @@ export default function PodcastGenerator() {
       speaker_ids: formData.speakerIds,
       podcast_type: formData.podcastType,
       max_revisions: formData.maxRevisions,
-      speaker_profiles: formData.speakerProfiles
+      speaker_profiles: formData.speakerProfiles,
+      speaker_speeds: formData.speakerSpeeds // Include speaker speeds
     };
   
     try {
@@ -94,8 +96,22 @@ export default function PodcastGenerator() {
         setPodcastDir(dirPath);
         console.log("Using podcast directory:", dirPath);
         
+        // Prepare data for batch audio generation by adding speaker profiles with speeds
+        const podcastDataWithProfiles = responseData.data.map(item => {
+          // Find the matching speaker profile
+          const speakerProfile = formData.speakerProfiles.find(
+            profile => (item.speaker.includes("MC1") && profile.id === formData.speakerIds[0]) || 
+                       (item.speaker.includes("MC2") && profile.id === formData.speakerIds[1])
+          );
+          
+          return {
+            ...item,
+            speakerProfile: speakerProfile || undefined
+          };
+        });
+        
         // Generate audio for all utterances
-        const audioResult = await generateBatchAudio(responseData.data, dirPath);
+        const audioResult = await generateBatchAudio(podcastDataWithProfiles, dirPath);
         
         if (audioResult.success && audioResult.audioFiles) {
           // Update the response with generated audio files
@@ -105,12 +121,12 @@ export default function PodcastGenerator() {
           
           setAudioProgress(100);
           setApiResponse(responseData);
-          setEditedPodcastData(responseData.data);
+          setEditedPodcastData(podcastDataWithProfiles); // Use the enhanced data with profiles
         } else {
           setError(audioResult.error || 'Failed to generate audio for utterances');
           setAudioProgress(100);
           setApiResponse(responseData);
-          setEditedPodcastData(responseData.data);
+          setEditedPodcastData(podcastDataWithProfiles); // Use the enhanced data with profiles
         }
       } else {
         setApiResponse(responseData);
@@ -129,6 +145,7 @@ export default function PodcastGenerator() {
       setLoading(false);
     }
   };
+
   const updateContent = (idx: number, newContent: string) => {
     const updatedData = [...editedPodcastData];
     updatedData[idx].content = newContent;
@@ -180,9 +197,42 @@ export default function PodcastGenerator() {
   const activateDemoMode = () => {
     // Create a simulated response with sample data
     const demoData: PodcastData[] = [
-      { speaker: "MC1", content: "Welcome to our podcast! Today we're discussing the fascinating world of AI and how it's transforming content creation." },
-      { speaker: "MC2", content: "That's right! We've seen incredible advances in machine learning that are making it possible to generate professional-sounding podcasts automatically." },
-      { speaker: "MC1", content: "Exactly. What's most impressive is how natural the conversations can sound, with proper intonation and emphasis." }
+      { 
+        speaker: "MC1", 
+        content: "Welcome to our podcast! Today we're discussing the fascinating world of AI and how it's transforming content creation.",
+        speakerProfile: {
+          id: 0,
+          name: "Mai Lan",
+          gender: "Female",
+          age: 20,
+          mc_guidelines: "+ Explanatory \n+ Comparative\n+ Reflective",
+          speed: 1.0
+        }
+      },
+      { 
+        speaker: "MC2", 
+        content: "That's right! We've seen incredible advances in machine learning that are making it possible to generate professional-sounding podcasts automatically.",
+        speakerProfile: {
+          id: 1,
+          name: "Minh Tú",
+          gender: "Male",
+          age: 30,
+          mc_guidelines: "+ Formal \n+ Informative \n+ Descriptive \n+ Objective",
+          speed: 1.0
+        }
+      },
+      { 
+        speaker: "MC1", 
+        content: "Exactly. What's most impressive is how natural the conversations can sound, with proper intonation and emphasis.",
+        speakerProfile: {
+          id: 0,
+          name: "Mai Lan",
+          gender: "Female",
+          age: 20,
+          mc_guidelines: "+ Explanatory \n+ Comparative\n+ Reflective",
+          speed: 1.0
+        }
+      }
     ];
     
     // Create simulated audio files that match your API's format

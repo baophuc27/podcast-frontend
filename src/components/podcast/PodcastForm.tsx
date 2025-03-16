@@ -19,6 +19,7 @@ export interface PodcastFormData {
   podcastType: string;
   maxRevisions: number;
   speakerProfiles: SpeakerProfile[];
+  speakerSpeeds: { [speakerId: number]: number }; // Add speaker speeds
 }
 
 export default function PodcastForm({ 
@@ -27,6 +28,12 @@ export default function PodcastForm({
 }: PodcastFormProps) {
   const [urls, setUrls] = useState<string>('');
   const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([0, 1]);
+  
+  // Add state for speaker speeds
+  const [speakerSpeeds, setSpeakerSpeeds] = useState<{ [speakerId: number]: number }>({
+    0: 1.0, // Default speed for speaker 0
+    1: 1.0  // Default speed for speaker 1
+  });
   
   // Style states (unified from format and quality)
   const [guidelines, setGuidelines] = useState<string>('');
@@ -46,6 +53,14 @@ export default function PodcastForm({
     setMaxRevisions(style.maxRevisions);
   };
 
+  // Handle speed changes for a specific speaker
+  const handleSpeedChange = (speakerId: number, newSpeed: number) => {
+    setSpeakerSpeeds(prev => ({
+      ...prev,
+      [speakerId]: newSpeed
+    }));
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
@@ -61,6 +76,14 @@ export default function PodcastForm({
       return;
     }
 
+    // Get the speaker profiles with speed values
+    const profilesWithSpeed = SPEAKER_PROFILES.filter(profile => 
+      selectedSpeakers.includes(profile.id)
+    ).map(profile => ({
+      ...profile,
+      speed: speakerSpeeds[profile.id] || 1.0 // Use configured speed or default to 1.0
+    }));
+    
     const formData: PodcastFormData = {
       urlList,
       guidelines,
@@ -68,9 +91,8 @@ export default function PodcastForm({
       speakerIds: selectedSpeakers,
       podcastType,
       maxRevisions,
-      speakerProfiles: SPEAKER_PROFILES.filter(profile => 
-        selectedSpeakers.includes(profile.id)
-      )
+      speakerProfiles: profilesWithSpeed,
+      speakerSpeeds // Include speaker speeds in the form data
     };
 
     onSubmit(formData);
@@ -124,7 +146,9 @@ export default function PodcastForm({
       
       <SpeakerSelection 
         selectedSpeakers={selectedSpeakers}
+        speakerSpeeds={speakerSpeeds}
         onChange={setSelectedSpeakers}
+        onSpeedChange={handleSpeedChange}
       />
       
       <div className="flex justify-center mt-8">

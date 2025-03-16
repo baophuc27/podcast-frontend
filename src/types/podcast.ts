@@ -2,6 +2,13 @@
  * Types for the podcast generator application
  */
 
+export type PodcastData = {
+  speaker: string;
+  content: string;
+  speakerProfile?: SpeakerProfile; // Add optional speakerProfile property
+};
+
+// Also ensure we add speed to SpeakerProfile
 export type SpeakerProfile = {
   id: number;
   name: string;
@@ -9,11 +16,7 @@ export type SpeakerProfile = {
   age: number;
   speaker_id?: number;
   mc_guidelines: string;
-};
-
-export type PodcastData = {
-  speaker: string;
-  content: string;
+  speed?: number; // Add optional speed property
 };
 
 export type AudioFiles = {

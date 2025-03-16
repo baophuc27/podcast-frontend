@@ -4,6 +4,9 @@ import { useState, useRef } from 'react';
 import { SpeakerProfile } from '@/types/podcast';
 import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
 
+// Import the modal component instead of SpeedControl
+import SpeedSettingsModal from './SpeedSettingsModal';
+
 // Helper function to convert numeric age to description
 const getAgeDescription = (age: number): string => {
   if (age < 25) return 'Young';
@@ -11,20 +14,31 @@ const getAgeDescription = (age: number): string => {
   return 'Mature';
 };
 
+// Updated interface with speed-related props
 interface SpeakerSelectionProps {
   selectedSpeakers: number[];
+  speakerSpeeds: { [speakerId: number]: number }; // Added this prop
   onChange: (selectedIds: number[]) => void;
+  onSpeedChange: (speakerId: number, speed: number) => void; // Added this prop
 }
 
 export default function SpeakerSelection({ 
   selectedSpeakers, 
-  onChange 
+  speakerSpeeds, // Added this prop
+  onChange,
+  onSpeedChange // Added this prop
 }: SpeakerSelectionProps) {
   const [hostMenuOpen, setHostMenuOpen] = useState(false);
   const [guestMenuOpen, setGuestMenuOpen] = useState(false);
+  const [isSpeedModalOpen, setIsSpeedModalOpen] = useState(false);
   
   const hostSpeaker = selectedSpeakers[0] !== undefined ? SPEAKER_PROFILES.find(s => s.id === selectedSpeakers[0]) : null;
   const guestSpeaker = selectedSpeakers[1] !== undefined ? SPEAKER_PROFILES.find(s => s.id === selectedSpeakers[1]) : null;
+  
+  // Get selected speakers as profiles
+  const selectedSpeakerProfiles = SPEAKER_PROFILES.filter(
+    speaker => selectedSpeakers.includes(speaker.id)
+  );
 
   const selectHost = (speakerId: number) => {
     const newSelection = [...selectedSpeakers];
@@ -62,12 +76,37 @@ export default function SpeakerSelection({
 
   return (
     <div className="mb-6">
-      <h3 className="font-medium mb-4 text-gray-800 dark:text-gray-200 text-lg flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-        Voice Selection
-      </h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium text-gray-800 dark:text-gray-200 text-lg flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Voice Selection
+        </h3>
+        
+        {/* Speed Settings Button */}
+        {(hostSpeaker || guestSpeaker) && (
+          <button
+            onClick={() => setIsSpeedModalOpen(true)}
+            type="button"
+            className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            Advanced Settings
+          </button>
+        )}
+      </div>
+      
+      {/* Speed Settings Modal */}
+      <SpeedSettingsModal 
+        isOpen={isSpeedModalOpen}
+        onClose={() => setIsSpeedModalOpen(false)}
+        speakers={selectedSpeakerProfiles}
+        speakerSpeeds={speakerSpeeds}
+        onSpeedChange={onSpeedChange}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Host Voice Selection */}
@@ -101,7 +140,7 @@ export default function SpeakerSelection({
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                       {getAgeDescription(hostSpeaker.age)}
                     </span>
-                                          <button 
+                    <button 
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 transition-colors"
                       onClick={(e) => playAudio(hostSpeaker.id, e)}
                       type="button"
@@ -185,6 +224,14 @@ export default function SpeakerSelection({
               })}
             </div>
           )}
+          
+          {/* Display current speed value instead of full speed control */}
+          {hostSpeaker && (
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between px-1">
+              <span>Voice speed: <span className="font-medium">{(speakerSpeeds[hostSpeaker.id] || 1.0).toFixed(1)}x</span></span>
+
+            </div>
+          )}
         </div>
         
         {/* Guest Voice Selection */}
@@ -218,7 +265,7 @@ export default function SpeakerSelection({
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                       {getAgeDescription(guestSpeaker.age)}
                     </span>
-                                          <button 
+                    <button 
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 transition-colors"
                       onClick={(e) => playAudio(guestSpeaker.id, e)}
                       type="button"
@@ -307,6 +354,13 @@ export default function SpeakerSelection({
                   </div>
                 );
               })}
+            </div>
+          )}
+          
+          {/* Display current speed value instead of full speed control */}
+          {guestSpeaker && (
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between px-1">
+              <span>Voice speed: <span className="font-medium">{(speakerSpeeds[guestSpeaker.id] || 1.0).toFixed(1)}x</span></span>
             </div>
           )}
         </div>
