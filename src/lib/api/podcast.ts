@@ -72,7 +72,21 @@ export async function regenerateUtterance(
     
     // The Python function returns an array of audio file paths
     if (data.audio_files && Array.isArray(data.audio_files)) {
-      return data.audio_files;
+      // Ensure all paths use forward slashes and are properly formatted
+      const formattedPaths = data.audio_files.map(path => {
+        // Convert backslashes to forward slashes (Windows paths)
+        let formattedPath = path.replace(/\\/g, '/');
+        
+        // Ensure path starts with a slash if it doesn't 
+        if (!formattedPath.startsWith('/') && !formattedPath.startsWith('http')) {
+          formattedPath = '/' + formattedPath;
+        }
+        
+        console.log("Formatted audio path:", formattedPath);
+        return formattedPath;
+      });
+      
+      return formattedPaths;
     } else {
       console.error("Unexpected response format:", data);
       return [];
@@ -148,3 +162,4 @@ export async function generateFullPodcastAudio(
       error: error instanceof Error ? error.message : 'Unknown error occurred' 
     };
   }
+}

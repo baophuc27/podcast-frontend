@@ -24,6 +24,14 @@ export default function PodcastGenerator() {
   useEffect(() => {
     console.log("Podcast directory set to:", podcastDir);
   }, [podcastDir]);
+  
+  // Debug audio files when they're updated
+  useEffect(() => {
+    if (apiResponse && apiResponse.audio_files) {
+      console.log("Audio files available:", apiResponse.audio_files);
+      console.log("Individual files (raw):", apiResponse.individual_files);
+    }
+  }, [apiResponse]);
 
   // Helper function to convert duration string to number
   const getDurationInMinutes = (durationString: string): number => {
@@ -92,7 +100,22 @@ export default function PodcastGenerator() {
           Object.entries(responseData.individual_files).forEach(([key, paths]) => {
             // Extract the utterance index from the key (e.g., "MC1_0" -> "0")
             const utteranceIdx = key.split('_')[1];
-            processedAudioFiles[`utterance_${utteranceIdx}`] = paths as string[];
+            
+            // Format paths to ensure they work correctly
+            const formattedPaths = (paths as string[]).map(path => {
+              // Convert backslashes to forward slashes
+              let formattedPath = path.replace(/\\/g, '/');
+              
+              // Make sure the path is absolute for the API
+              if (!formattedPath.startsWith('/') && !formattedPath.startsWith('http')) {
+                formattedPath = '/' + formattedPath;
+              }
+              
+              return formattedPath;
+            });
+            
+            processedAudioFiles[`utterance_${utteranceIdx}`] = formattedPaths;
+            console.log(`Processed audio for utterance_${utteranceIdx}:`, formattedPaths);
           });
           
           // Update the response with processed audio files
@@ -163,7 +186,7 @@ export default function PodcastGenerator() {
       }, 150);
 
       // Call the API to generate the full podcast
-      const result = await generateFullPodcastAudio(editedPodcastData);
+      const result = await generateFullPodcastAudio(editedPodcastData, podcastDir);
       
       clearInterval(interval);
       setAudioProgress(100);

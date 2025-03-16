@@ -32,6 +32,7 @@ export default function PodcastScript({
   // Debug log for podcast directory and set a fallback if needed
   useEffect(() => {
     console.log("PodcastScript received podcastDir:", podcastDir);
+    console.log("Initial audioFiles:", audioFiles);
     
     // Check if the podcast directory is valid (not empty)
     if (podcastDir && podcastDir.trim().length > 0) {
@@ -45,7 +46,14 @@ export default function PodcastScript({
       console.log("Using fallback podcast directory:", fallbackDir);
       setDirectoryStatus('valid'); // We'll treat this as valid since we have a fallback
     }
-  }, [podcastDir]);
+    
+    // Debug check all available audio files
+    if (audioFiles) {
+      Object.entries(audioFiles).forEach(([key, files]) => {
+        console.log(`Audio for ${key}:`, files);
+      });
+    }
+  }, [podcastDir, audioFiles]);
   
   // Use the combined audio files (original + any updates)
   const currentAudioFiles = { ...audioFiles, ...updatedAudioFiles };

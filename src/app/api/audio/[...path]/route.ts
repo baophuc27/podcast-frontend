@@ -12,8 +12,9 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
-    // Get the file path from the URL parameters
-    const filePath = params.path.join('/');
+    // Get the file path from the URL parameters - ensure params.path is an array
+    const pathArray = Array.isArray(params.path) ? params.path : [params.path];
+    const filePath = pathArray.join('/');
     console.log('Requested audio file path:', filePath);
     
     // Construct the full path to the audio file

@@ -1,7 +1,7 @@
 // src/components/podcast/AudioPlayer.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 interface AudioPlayerProps {
   src: string;
@@ -23,26 +23,24 @@ export default function AudioPlayer({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fix the audio path if it's a server-side path
-  // This ensures the browser can access the files properly
-  const getProperAudioPath = (path: string): string => {
-    if (!path) return '';
+  // Process the source URL - using useMemo to avoid recalculation on every render
+  const audioSrc = useMemo(() => {
+    if (!src) return '';
     
     // If it's already an absolute URL, return it
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return src;
     }
     
     // If it's a demo path, keep it as is
-    if (path.startsWith('/demo/')) {
-      return path;
+    if (src.startsWith('/demo/')) {
+      return src;
     }
     
-    // For server-side paths, convert to a proper URL
-    // Convert backslashes to forward slashes (especially important for Windows paths)
-    const cleanPath = path.replace(/\\/g, '/');
+    // Convert backslashes to forward slashes
+    const cleanPath = src.replace(/\\/g, '/');
     
-    // If the path contains 'podcast_audio', extract the relevant parts
+    // Simple transformation to API route
     if (cleanPath.includes('podcast_audio')) {
       const parts = cleanPath.split('podcast_audio/');
       if (parts.length > 1) {
@@ -50,54 +48,26 @@ export default function AudioPlayer({
       }
     }
     
-    // For paths that don't contain podcast_audio, try to extract what might be after the podcast directory
-    const pathSegments = cleanPath.split('/');
-    // Look for segments that might be part of the audio path structure
-    // Typically these would be in format like 'MC1_0_0.wav'
-    const audioFileMatch = pathSegments.find(segment => 
-      /^(MC\d+)_\d+(_\d+)?\.wav/i.test(segment)
-    );
-    
-    if (audioFileMatch) {
-      // Find the index of this segment
-      const audioFileIndex = pathSegments.indexOf(audioFileMatch);
-      // Get everything from that point forward
-      if (audioFileIndex > 0) {
-        const relevantPath = pathSegments.slice(audioFileIndex - 1).join('/');
-        return `/api/audio/${relevantPath}`;
-      }
-    }
-    
-    // If we couldn't transform the path in a known way, 
-    // try to make a good guess based on the structure of the path
-    if (pathSegments.length > 2) {
-      // Take the last few segments which likely contain the actual audio file
-      const lastSegments = pathSegments.slice(-2).join('/');
-      return `/api/audio/${lastSegments}`;
-    }
-    
-    // If all else fails, use the original path but warn in console
-    console.log(`Could not transform path, using as is: ${path}`);
-    return path;
-  };
+    // Basic path transformation
+    return `/api/audio/${cleanPath.split('/').filter(Boolean).slice(-2).join('/')}`;
+  }, [src]);
 
-  // Processed source URL
-  const audioSrc = getProperAudioPath(src);
-
-  // Debug info
+  // Reset states when the src prop changes
   useEffect(() => {
-    console.log(`AudioPlayer received src: ${src}`);
+    console.log(`Audio source changed to: ${src}`);
     console.log(`Processed to: ${audioSrc}`);
-  }, [src, audioSrc]);
-
-  // Reset states when the src changes
-  useEffect(() => {
+    
     setError(null);
     setLoading(true);
     setIsPlaying(false);
     setCurrentTime(0);
-  }, [src]);
+    
+    if (!audioSrc) {
+      setLoading(false);
+    }
+  }, [src, audioSrc]);
 
+  // Handle audio element events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -109,7 +79,6 @@ export default function AudioPlayer({
     const handleDurationChange = () => {
       setDuration(audio.duration);
       setLoading(false);
-      console.log(`Audio duration loaded: ${audio.duration}`);
     };
 
     const handleEnded = () => {
@@ -120,12 +89,11 @@ export default function AudioPlayer({
 
     const handleCanPlay = () => {
       setLoading(false);
-      console.log(`Audio can play now`);
     };
 
-    const handleError = (e: Event) => {
-      console.error("Audio playback error for src:", audioSrc, e);
-      setError("Unable to play audio. The file may not be available or the format is not supported.");
+    const handleError = () => {
+      console.error("Audio playback error for:", audioSrc);
+      setError("Unable to play audio. The file may not be available.");
       setIsPlaying(false);
       setLoading(false);
     };
@@ -137,7 +105,7 @@ export default function AudioPlayer({
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
     
-    // If audio source is changed, attempt to load it
+    // If the audio source exists, load it
     if (audioSrc) {
       audio.load();
     }
@@ -160,18 +128,14 @@ export default function AudioPlayer({
       audio.pause();
       setIsPlaying(false);
     } else {
-      // Use a promise to catch play() errors (common in browsers)
       const playPromise = audio.play();
-      
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             setIsPlaying(true);
-            console.log("Audio playing successfully");
           })
-          .catch(err => {
-            console.error("Playback failed:", err);
-            setError("Playback failed. This may be due to browser autoplay restrictions or missing audio file.");
+          .catch(() => {
+            setError("Playback failed. This may be due to browser autoplay restrictions.");
             setIsPlaying(false);
           });
       }
@@ -194,8 +158,8 @@ export default function AudioPlayer({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Check if src is valid
-  const isValidSrc = audioSrc && audioSrc.trim().length > 0;
+  // Check if source is valid
+  const isValidSrc = Boolean(audioSrc);
 
   return (
     <div className={`flex flex-col ${className}`}>
