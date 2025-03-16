@@ -22,6 +22,55 @@ export default function AudioPlayer({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fix the audio path if it's a server-side path
+  // This ensures the browser can access the files properly
+  const getProperAudioPath = (path: string): string => {
+    if (!path) return '';
+    
+    // If it's already an absolute URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    // If it's a demo path, keep it as is
+    if (path.startsWith('/demo/')) {
+      return path;
+    }
+    
+    // For server-side paths, convert to a proper URL
+    // Convert backslashes to forward slashes
+    const cleanPath = path.replace(/\\/g, '/');
+    
+    // If the path contains 'podcast_audio', extract the relevant parts
+    if (cleanPath.includes('podcast_audio')) {
+      const parts = cleanPath.split('podcast_audio/');
+      if (parts.length > 1) {
+        return `/api/audio/${parts[1]}`;
+      }
+    }
+    
+    // If we couldn't transform the path, return the original
+    console.log(`Using audio path: ${path}`);
+    return path;
+  };
+
+  // Processed source URL
+  const audioSrc = getProperAudioPath(src);
+
+  // Debug info
+  useEffect(() => {
+    console.log(`AudioPlayer received src: ${src}`);
+    console.log(`Processed to: ${audioSrc}`);
+  }, [src, audioSrc]);
+
+  // Reset states when the src changes
+  useEffect(() => {
+    setError(null);
+    setLoading(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  }, [src]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -33,6 +82,7 @@ export default function AudioPlayer({
     const handleDurationChange = () => {
       setDuration(audio.duration);
       setLoading(false);
+      console.log(`Audio duration loaded: ${audio.duration}`);
     };
 
     const handleEnded = () => {
@@ -43,37 +93,37 @@ export default function AudioPlayer({
 
     const handleCanPlay = () => {
       setLoading(false);
+      console.log(`Audio can play now`);
     };
 
-    const handleError = (e: ErrorEvent) => {
-      console.error("Audio playback error:", e);
-      setError("Unable to play audio. The audio file may not be available.");
+    const handleError = (e: Event) => {
+      console.error("Audio playback error for src:", audioSrc, e);
+      setError("Unable to play audio. The file may not be available or the format is not supported.");
       setIsPlaying(false);
       setLoading(false);
     };
 
+    // Add event listeners
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('error', handleError as EventListener);
+    audio.addEventListener('error', handleError);
+    
+    // If audio source is changed, attempt to load it
+    if (audioSrc) {
+      audio.load();
+    }
 
+    // Clean up event listeners
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('error', handleError as EventListener);
+      audio.removeEventListener('error', handleError);
     };
-  }, []);
-
-  // Reset error state and loading state when src changes
-  useEffect(() => {
-    setError(null);
-    setLoading(true);
-    setIsPlaying(false);
-    setCurrentTime(0);
-  }, [src]);
+  }, [audioSrc]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
@@ -90,6 +140,7 @@ export default function AudioPlayer({
         playPromise
           .then(() => {
             setIsPlaying(true);
+            console.log("Audio playing successfully");
           })
           .catch(err => {
             console.error("Playback failed:", err);
@@ -117,7 +168,7 @@ export default function AudioPlayer({
   };
 
   // Check if src is valid
-  const isValidSrc = src && src.trim().length > 0;
+  const isValidSrc = audioSrc && audioSrc.trim().length > 0;
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -125,8 +176,7 @@ export default function AudioPlayer({
         <>
           <audio
             ref={audioRef}
-            src={src}
-            autoPlay={autoPlay}
+            src={audioSrc}
             preload="metadata"
             className={showControls ? 'hidden' : 'w-full'}
           />
@@ -148,6 +198,7 @@ export default function AudioPlayer({
                       ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed' 
                       : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
                   } text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  aria-label={isPlaying ? "Pause" : "Play"}
                 >
                   {loading ? (
                     <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

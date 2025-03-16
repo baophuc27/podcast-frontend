@@ -24,7 +24,9 @@ export type APIResponse = {
   status_code: number;
   data: PodcastData[];
   audio_files?: AudioFiles;
+  individual_files?: { [key: string]: string[] };
   full_audio_path?: string;
+  podcast_dir?: string; // Add this to match the backend response
   error?: string;
 };
 

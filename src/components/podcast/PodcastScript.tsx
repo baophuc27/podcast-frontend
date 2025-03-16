@@ -1,12 +1,15 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { PodcastData } from '@/types/podcast';
 import UtteranceCard from './UtteranceCard';
 import { generateScriptContent, createDownloadLink } from '@/lib/utils/podcast';
+import { regenerateUtterance } from '@/lib/api/podcast';
 
 interface PodcastScriptProps {
   podcastData: PodcastData[];
   audioFiles?: { [key: string]: string[] };
+  podcastDir?: string;
   onUpdate: (index: number, newContent: string) => void;
   onGenerateFinal: () => void;
   loading: boolean;
@@ -14,14 +17,57 @@ interface PodcastScriptProps {
 
 export default function PodcastScript({
   podcastData,
-  audioFiles,
+  audioFiles = {},
+  podcastDir = '',
   onUpdate,
   onGenerateFinal,
   loading
 }: PodcastScriptProps) {
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+  const [updatedAudioFiles, setUpdatedAudioFiles] = useState<{ [key: string]: string[] }>({});
+  
+  // Debug log for podcast directory
+  useEffect(() => {
+    console.log("PodcastScript received podcastDir:", podcastDir);
+  }, [podcastDir]);
+  
+  // Use the combined audio files (original + any updates)
+  const currentAudioFiles = { ...audioFiles, ...updatedAudioFiles };
+
   const handleDownloadScript = () => {
     const scriptContent = generateScriptContent(podcastData);
     createDownloadLink(scriptContent, 'podcast-script.txt');
+  };
+
+  // Function to regenerate a specific utterance's audio
+  const handleRegenerateAudio = async (index: number) => {
+    if (!podcastDir) {
+      console.error("Cannot regenerate audio: podcast directory not available");
+      return;
+    }
+    
+    console.log(`Regenerating audio for utterance ${index} using directory: ${podcastDir}`);
+    setRegeneratingIndex(index);
+    
+    try {
+      // Call the API to regenerate this utterance
+      const newAudioFiles = await regenerateUtterance(podcastData, index, podcastDir);
+      
+      console.log("Regenerated audio files:", newAudioFiles);
+      
+      if (newAudioFiles.length > 0) {
+        // Update the audio files for this utterance
+        setUpdatedAudioFiles(prev => ({
+          ...prev,
+          [`utterance_${index}`]: newAudioFiles
+        }));
+      }
+      
+      setRegeneratingIndex(null);
+    } catch (error) {
+      console.error("Error regenerating utterance:", error);
+      setRegeneratingIndex(null);
+    }
   };
 
   return (
@@ -81,6 +127,15 @@ export default function PodcastScript({
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
               Total utterances: <span className="font-medium">{podcastData.length}</span>
+              {podcastDir ? (
+                <span className="ml-3 text-green-600 dark:text-green-400">
+                  ✓ Podcast directory available
+                </span>
+              ) : (
+                <span className="ml-3 text-red-600 dark:text-red-400">
+                  ✗ Podcast directory not available
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -92,8 +147,10 @@ export default function PodcastScript({
             key={idx}
             item={item}
             index={idx}
-            audioUrl={audioFiles?.[`utterance_${idx}`]?.[0]}
+            audioUrl={currentAudioFiles[`utterance_${idx}`]?.[0] || ''}
             onUpdate={onUpdate}
+            onRegenerateAudio={() => handleRegenerateAudio(idx)}
+            isRegenerating={regeneratingIndex === idx}
           />
         ))}
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PodcastData } from '@/types/podcast';
 import AudioPlayer from './AudioPlayer';
 
@@ -9,16 +9,25 @@ interface UtteranceCardProps {
   index: number;
   audioUrl?: string;
   onUpdate: (index: number, newContent: string) => void;
+  onRegenerateAudio?: () => void;
+  isRegenerating?: boolean;
 }
 
 export default function UtteranceCard({ 
   item, 
   index, 
   audioUrl, 
-  onUpdate 
+  onUpdate,
+  onRegenerateAudio,
+  isRegenerating = false
 }: UtteranceCardProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState(item.content);
+  
+  // Update content if it changes from parent
+  useEffect(() => {
+    setEditedContent(item.content);
+  }, [item.content]);
 
   const handleSave = () => {
     onUpdate(index, editedContent);
@@ -30,6 +39,7 @@ export default function UtteranceCard({
     setIsEditMode(false);
   };
 
+  // Get speaker style classes based on speaker type
   const getSpeakerColorClass = () => {
     if (item.speaker.includes("MC1")) {
       return {
@@ -57,9 +67,13 @@ export default function UtteranceCard({
 
   const colorClass = getSpeakerColorClass();
 
+  // For debugging
+  console.log(`UtteranceCard ${index} audioUrl:`, audioUrl);
+
   return (
-    <div className={`rounded-lg overflow-hidden shadow-sm border ${colorClass.border} transition-all duration-200 hover:shadow-md`}>
+    <div className={`rounded-lg overflow-hidden shadow border ${colorClass.border} transition-all duration-200 hover:shadow-md`}>
       <div className="flex flex-col md:flex-row">
+        {/* Speaker info section */}
         <div className={`md:w-1/4 lg:w-1/5 p-4 ${colorClass.bg} flex flex-row md:flex-col justify-between md:justify-start items-center md:items-start gap-4`}>
           <div className="flex items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${colorClass.icon}`}>
@@ -75,38 +89,34 @@ export default function UtteranceCard({
             </div>
             <div>
               <h4 className={`font-bold ${colorClass.text}`}>{item.speaker}</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Speaker {index + 1}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Utterance {index + 1}</p>
             </div>
           </div>
           
+          {/* Audio player */}
           <div className="md:mt-4 w-full">
-            {audioUrl ? (
-              <AudioPlayer src={audioUrl} showControls={true} className="md:mt-2" />
-            ) : (
-              <div className="flex justify-center md:justify-start">
-                <button className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 p-2 rounded-full transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-300">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                  </svg>
-                </button>
-              </div>
-            )}
+            <AudioPlayer 
+              src={audioUrl || ''} 
+              showControls={true} 
+              className="md:mt-2" 
+            />
           </div>
         </div>
         
+        {/* Content section */}
         <div className="flex-1 p-4 bg-white dark:bg-gray-800">
           {isEditMode ? (
             <div>
               <textarea
                 value={editedContent}
                 onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded min-h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md min-h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="Enter the speaker's dialogue here..."
               />
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={handleSave}
-                  className="bg-green-600 text-white px-4 py-2 rounded text-sm flex items-center"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -115,7 +125,7 @@ export default function UtteranceCard({
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="bg-gray-600 text-white px-4 py-2 rounded text-sm flex items-center"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -126,8 +136,8 @@ export default function UtteranceCard({
             </div>
           ) : (
             <div>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{item.content}</p>
-              <div className="mt-3">
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{item.content}</p>
+              <div className="mt-3 flex gap-3">
                 <button
                   onClick={() => setIsEditMode(true)}
                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium flex items-center transition-colors"
@@ -137,6 +147,31 @@ export default function UtteranceCard({
                   </svg>
                   Edit Script
                 </button>
+                
+                {onRegenerateAudio && (
+                  <button
+                    onClick={onRegenerateAudio}
+                    disabled={isRegenerating}
+                    className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                        Regenerate Audio
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}

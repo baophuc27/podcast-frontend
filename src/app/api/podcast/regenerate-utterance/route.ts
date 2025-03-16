@@ -1,3 +1,4 @@
+// src/app/api/podcast/regenerate-utterance/route.ts
 import { NextRequest } from 'next/server';
 import { PodcastData } from '@/types/podcast';
 import { callBackendService } from '@/lib/api/backend';
@@ -12,10 +13,16 @@ export async function POST(request: NextRequest) {
   try {
     const body: RegenerateUtterancePayload = await request.json();
     
-    // Use the centralized backend service caller
+    console.log("Regenerate utterance API route called for idx:", body.idx);
+    console.log("Using podcast dir:", body.podcast_dir);
+    
+    // For single utterance regeneration, we use the TTS API indirectly through the main backend
+    // This calls a function that uses 'https://kiki-tts-engine.tts.zalo.ai/generate_audio'
+    // But the request itself goes to the main backend which handles the TTS API call
     return callBackendService({
       endpoint: 'regenerate_utterance',
-      payload: body
+      payload: body,
+      host: 'http://localhost:8172' // Explicitly using the main backend host
     });
     
   } catch (error) {

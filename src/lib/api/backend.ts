@@ -4,16 +4,21 @@ type BackendRequestOptions = {
   endpoint: string;
   payload: any;
   timeout?: number;
+  host?: string;
 };
 
 /**
  * Makes a request to the Python backend service
  */
-export async function callBackendService<T>({ endpoint, payload, timeout = 60000 }: BackendRequestOptions): Promise<NextResponse> {
+export async function callBackendService<T>({ endpoint, payload, timeout = 60000, host }: BackendRequestOptions): Promise<NextResponse> {
   try {
-    console.log(`Attempting to connect to backend at: http://localhost:8172/${endpoint}`);
+    // Use the provided host or default to the main backend
+    const backend_url = host || 'http://localhost:8172';
+    const url = `${backend_url}/${endpoint}`;
     
-    const response = await fetch(`http://localhost:8172/${endpoint}`, {
+    console.log(`Attempting to connect to backend at: ${url}`);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

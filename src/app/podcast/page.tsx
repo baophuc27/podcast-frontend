@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PodcastData, APIResponse } from '@/types/podcast';
 import PodcastForm, { PodcastFormData } from '@/components/podcast/PodcastForm';
 import PodcastProgress from '@/components/podcast/PodcastProgress';
 import PodcastScript from '@/components/podcast/PodcastScript';
 import PodcastFinal from '@/components/podcast/PodcastFinal';
 import ErrorAlert from '@/components/ui/ErrorAlert';
+import { generateFullPodcastAudio } from '@/lib/api/podcast';
 
 export default function PodcastGenerator() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -16,6 +17,12 @@ export default function PodcastGenerator() {
   const [generatedFinal, setGeneratedFinal] = useState<boolean>(false);
   const [finalAudioUrl, setFinalAudioUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [podcastDir, setPodcastDir] = useState<string>('');
+
+  // Debug podcast directory changes
+  useEffect(() => {
+    console.log("Podcast directory set to:", podcastDir);
+  }, [podcastDir]);
 
   // Helper function to convert duration string to number
   const getDurationInMinutes = (durationString: string): number => {
@@ -34,6 +41,7 @@ export default function PodcastGenerator() {
     setGeneratedFinal(false);
     setFinalAudioUrl('');
     setError(null);
+    setPodcastDir('');
 
     const payload = {
       input_urls: formData.urlList,
@@ -46,6 +54,16 @@ export default function PodcastGenerator() {
     };
 
     try {
+      // Start progress animation
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 2;
+        setAudioProgress(Math.min(progress, 95)); // Cap at 95% until we get the actual response
+        if (progress >= 95) {
+          clearInterval(interval);
+        }
+      }, 300);
+
       // Make API call to your backend
       const response = await fetch('/api/podcast', {
         method: 'POST',
@@ -53,30 +71,48 @@ export default function PodcastGenerator() {
         body: JSON.stringify(payload)
       });
 
+      clearInterval(interval);
       const responseData: APIResponse = await response.json();
-
+      console.log("API Response:", responseData);
+      
       // If successful
       if (responseData.status_code === 0) {
-        // Simulate audio generation progress
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += 5;
-          setAudioProgress(progress);
-          if (progress >= 100) {
-            clearInterval(interval);
-          }
-        }, 300);
-
-        setTimeout(() => {
-          clearInterval(interval);
-          setAudioProgress(100);
-          setApiResponse(responseData);
-          setEditedPodcastData(responseData.data);
-          setLoading(false);
-        }, 6000);
+        setAudioProgress(100);
+        
+        // Process audio files to match the format expected by components
+        // The API returns individual_files in a format like:
+        // { "MC1_0": ["path1", "path2"], "MC2_1": ["path3"] }
+        
+        // Convert to the format expected by our components:
+        // { "utterance_0": ["path1", "path2"], "utterance_1": ["path3"] }
+        const processedAudioFiles: { [key: string]: string[] } = {};
+        
+        if (responseData.individual_files) {
+          Object.entries(responseData.individual_files).forEach(([key, paths]) => {
+            // Extract the utterance index from the key (e.g., "MC1_0" -> "0")
+            const utteranceIdx = key.split('_')[1];
+            processedAudioFiles[`utterance_${utteranceIdx}`] = paths as string[];
+          });
+          
+          // Update the response with processed audio files
+          responseData.audio_files = processedAudioFiles;
+        }
+        
+        // Store the podcast directory - this is critical
+        if (responseData.podcast_dir) {
+          setPodcastDir(responseData.podcast_dir);
+          console.log("Setting podcast directory:", responseData.podcast_dir);
+        } else {
+          console.warn("Warning: No podcast_dir received from API");
+        }
+        
+        setApiResponse(responseData);
+        setEditedPodcastData(responseData.data);
+        setLoading(false);
       } else {
         setApiResponse(responseData);
         setLoading(false);
+        setError(responseData.error || 'An error occurred during podcast generation');
       }
     } catch (error) {
       console.error('Error generating podcast:', error);
@@ -99,36 +135,79 @@ export default function PodcastGenerator() {
   const regenerateFullPodcast = async () => {
     setLoading(true);
     setAudioProgress(0);
+    setError(null);
     
     try {
-      // In a real implementation, you would use the API client
-      // const result = await generateFullPodcastAudio(editedPodcastData);
-      // if (result.success && result.audioUrl) {
-      //    setFinalAudioUrl(result.audioUrl);
-      // }
-      
-      // For demo purposes, simulate progress
+      // Start progress animation
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 5;
-        setAudioProgress(progress);
-        if (progress >= 100) {
+        progress += 3;
+        setAudioProgress(Math.min(progress, 95)); // Cap at 95% until we get the response
+        if (progress >= 95) {
           clearInterval(interval);
         }
       }, 150);
 
-      setTimeout(() => {
-        clearInterval(interval);
-        setAudioProgress(100);
+      // Call the API to generate the full podcast
+      const result = await generateFullPodcastAudio(editedPodcastData);
+      
+      clearInterval(interval);
+      setAudioProgress(100);
+      
+      if (result.success && result.audioUrl) {
+        setFinalAudioUrl(result.audioUrl);
         setGeneratedFinal(true);
-        setFinalAudioUrl('https://example.com/sample-podcast.mp3'); // Placeholder URL
-        setLoading(false);
-      }, 3000);
+      } else {
+        setError(result.error || 'Failed to generate final podcast audio');
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error generating final podcast:', error);
-      setError('Failed to generate final podcast audio.');
+      setError('Failed to generate final podcast audio. Please try again.');
       setLoading(false);
     }
+  };
+
+  // Function to handle demo mode if needed
+  const activateDemoMode = () => {
+    // Create a simulated response with sample data
+    const demoData: PodcastData[] = [
+      { speaker: "MC1", content: "Welcome to our podcast! Today we're discussing the fascinating world of AI and how it's transforming content creation." },
+      { speaker: "MC2", content: "That's right! We've seen incredible advances in machine learning that are making it possible to generate professional-sounding podcasts automatically." },
+      { speaker: "MC1", content: "Exactly. What's most impressive is how natural the conversations can sound, with proper intonation and emphasis." }
+    ];
+    
+    // Create simulated audio files that match your API's format
+    // For each utterance, we'll have a single audio file
+    const demoIndividualFiles = {
+      "MC1_0": ["/demo/mc1_0_0.wav"], 
+      "MC2_1": ["/demo/mc2_1_0.wav"],
+      "MC1_2": ["/demo/mc1_2_0.wav"] 
+    };
+    
+    // Now convert to the expected format for our components
+    const demoAudioFiles = {
+      "utterance_0": demoIndividualFiles["MC1_0"],
+      "utterance_1": demoIndividualFiles["MC2_1"],
+      "utterance_2": demoIndividualFiles["MC1_2"]
+    };
+    
+    // Important: Set the podcast directory for demo mode
+    const demoPodcastDir = "demo_podcast_dir";
+    setPodcastDir(demoPodcastDir);
+    console.log("Setting demo podcast directory:", demoPodcastDir);
+    
+    setApiResponse({
+      status_code: 0,
+      data: demoData,
+      individual_files: demoIndividualFiles,
+      audio_files: demoAudioFiles,
+      podcast_dir: demoPodcastDir
+    });
+    
+    setEditedPodcastData(demoData);
+    setError(null);
   };
 
   return (
@@ -161,7 +240,10 @@ export default function PodcastGenerator() {
       </div>
       
       {error && (
-        <ErrorAlert message={error} />
+        <ErrorAlert 
+          message={error} 
+          onDemoMode={activateDemoMode} 
+        />
       )}
       
       <PodcastForm 
@@ -203,6 +285,7 @@ export default function PodcastGenerator() {
               <PodcastScript 
                 podcastData={editedPodcastData}
                 audioFiles={apiResponse.audio_files}
+                podcastDir={podcastDir} // Pass the podcast directory here
                 onUpdate={updateContent}
                 onGenerateFinal={regenerateFullPodcast}
                 loading={loading}
