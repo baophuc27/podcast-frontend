@@ -6,7 +6,6 @@ import { PodcastData } from '@/types/podcast';
 
 /**
  * Split a long utterance into smaller chunks suitable for TTS processing.
- * This replicates the functionality from the original Python code.
  */
 export function splitLongUtterance(text: string): string[] {
   const words = text.split(/\s+/);

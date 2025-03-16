@@ -1,31 +1,14 @@
-// This file contains functions for interacting with the podcast generation API
-
-import { PodcastData, APIResponse, SpeakerProfile } from '@/types/podcast';
+/**
+ * Client-side API functions for interacting with the podcast generation service
+ */
+import { PodcastData, APIResponse, SpeakerProfile, PodcastGenerationPayload } from '@/types/podcast';
 
 /**
  * Generate a podcast from a list of URLs
  */
-export async function generatePodcastFromUrls(
-  inputUrls: string[],
-  guidelines: string,
-  duration: number,
-  speakerIds: number[],
-  podcastType: string,
-  maxRevisions: number,
-  speakerProfiles: SpeakerProfile[]
-): Promise<APIResponse> {
+export async function generatePodcast(payload: PodcastGenerationPayload): Promise<APIResponse> {
   try {
-    const payload = {
-      input_urls: inputUrls,
-      guidelines,
-      duration,
-      speaker_ids: speakerIds,
-      podcast_type: podcastType,
-      max_revisions: maxRevisions,
-      speaker_profiles: speakerProfiles
-    };
-
-    const response = await fetch('http://localhost:8172/generate_podcast_from_urls', {
+    const response = await fetch('/api/podcast', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -48,15 +31,15 @@ export async function generatePodcastFromUrls(
 }
 
 /**
- * Generate audio for a single utterance
+ * Regenerate audio for a single utterance
  */
-export async function regenerateUtteranceAudio(
+export async function regenerateUtterance(
   podcastData: PodcastData[], 
   idx: number, 
   podcastDir: string
 ): Promise<string[]> {
   try {
-    const response = await fetch('http://localhost:8172/regenerate_utterance', {
+    const response = await fetch('/api/podcast/regenerate-utterance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -85,7 +68,7 @@ export async function generateFullPodcastAudio(
   podcastData: PodcastData[]
 ): Promise<{ success: boolean; audioUrl?: string; error?: string }> {
   try {
-    const response = await fetch('http://localhost:8172/gen_audio', {
+    const response = await fetch('/api/podcast/generate-full', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(podcastData)
@@ -97,12 +80,12 @@ export async function generateFullPodcastAudio(
 
     const data = await response.json();
     
-    if (data.error === 0) {
+    if (data.status_code === 0) {
       return { success: true, audioUrl: data.data };
     } else {
       return { 
         success: false, 
-        error: data.message || 'Failed to generate full podcast audio' 
+        error: data.error || 'Failed to generate full podcast audio' 
       };
     }
   } catch (error) {

@@ -1,35 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { PodcastData } from '@/types/podcast';
-
-type RegenerateUtterancePayload = {
-  podcast_data: PodcastData[];
-  idx: number;
-  podcast_dir: string;
-};
+import { callBackendService } from '@/lib/api/backend';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: RegenerateUtterancePayload = await request.json();
+    const body: PodcastData[] = await request.json();
     
-    // Forward request to your Python backend
-    const response = await fetch('http://localhost:8172/regenerate_utterance', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    // Use the centralized backend service caller
+    return callBackendService({
+      endpoint: 'gen_audio',
+      payload: body
     });
     
-    const data = await response.json();
-    
-    // Return the response from your Python backend
-    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in regenerate utterance API route:', error);
-    return NextResponse.json(
+    console.error('Error in generate full podcast API route:', error);
+    return Response.json(
       { 
         error: error instanceof Error ? error.message : 'Unknown error occurred',
-        audio_files: []
+        data: null
       },
       { status: 500 }
     );
