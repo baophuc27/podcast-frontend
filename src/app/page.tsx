@@ -8,7 +8,39 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true); // Add state for auth checking
   const router = useRouter();
+
+  // Check if user is already authenticated when page loads
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Avoid auth check if we were redirected here
+        if (typeof window !== 'undefined' && 
+            (window.location.search.includes('redirected=true') || 
+             window.location.search.includes('from='))) {
+          setCheckingAuth(false);
+          return;
+        }
+        
+        // Call the auth check API
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        // If authenticated, redirect to podcast page
+        if (data.isAuthenticated) {
+          console.log('Already authenticated, redirecting to podcast page');
+          router.push('/podcast');
+        }
+      } catch (err) {
+        console.error('Error checking authentication:', err);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   // Check if we were redirected here due to missing auth
   useEffect(() => {
@@ -16,8 +48,6 @@ export default function AuthPage() {
     if (typeof window !== 'undefined' && window.location.search.includes('redirected=true')) {
       setError('Please log in to access the podcast page');
     }
-    
-    // Do NOT add any automatic redirects here!
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +84,15 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  // Show loading indicator while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">

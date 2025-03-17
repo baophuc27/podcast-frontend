@@ -2,44 +2,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Keep track of redirects to prevent loops
-const redirectTracker = new Map<string, number>();
-
+// This middleware will run for all protected routes
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const ip = request.ip || 'unknown';
-  const requestId = `${ip}-${path}`;
-  
-  // Count redirects for this specific request path
-  const redirectCount = redirectTracker.get(requestId) || 0;
   
   // Get auth token
   const authToken = request.cookies.get('auth_token')?.value;
   
-  console.log(`Path: ${path}, Auth: ${!!authToken}, Redirects: ${redirectCount}`);
+  console.log(`Path: ${path}, Auth: ${!!authToken}`);
   
-  // Only protect /podcast path and limit redirects to prevent loops
-  if (path.startsWith('/podcast') && !authToken && redirectCount < 1) {
-    // Increment redirect count
-    redirectTracker.set(requestId, redirectCount + 1);
+  // Only protect /podcast path
+  if (path.startsWith('/podcast') && !authToken) {
+    // Create the redirect URL with the original URL as a parameter
+    // This allows us to redirect back after login
+    const redirectUrl = new URL('/', request.url);
+    redirectUrl.searchParams.set('redirected', 'true');
+    redirectUrl.searchParams.set('from', path);
     
-    // After 10 seconds, reset the count (cleanup)
-    setTimeout(() => {
-      redirectTracker.delete(requestId);
-    }, 10000);
-    
-    console.log(`Redirecting to login, count: ${redirectCount + 1}`);
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-  
-  // Reset redirect count if it exists
-  if (redirectTracker.has(requestId)) {
-    redirectTracker.delete(requestId);
+    console.log(`Redirecting to login from ${path}`);
+    return NextResponse.redirect(redirectUrl);
   }
   
   return NextResponse.next();
 }
 
+// Update the matcher to include any paths that require authentication
 export const config = {
   matcher: ['/podcast/:path*'],
 };
