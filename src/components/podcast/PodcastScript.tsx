@@ -1,7 +1,7 @@
 // src/components/podcast/PodcastScript.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { PodcastData } from '@/types/podcast';
 import UtteranceCard from './UtteranceCard';
 import { generateScriptContent, createDownloadLink } from '@/lib/utils/podcast';

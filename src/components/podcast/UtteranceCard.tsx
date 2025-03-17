@@ -120,7 +120,6 @@ export default function UtteranceCard({
   };
 
   const colorClass = getSpeakerColorClass();
-  const hasAudio = !!audioUrl;
 
   return (
     <div className={`rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border ${colorClass.border}`}>

@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { SpeakerProfile } from '@/types/podcast';
+import { useState } from 'react';
 import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
 
 // Import the modal component instead of SpeedControl

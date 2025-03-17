@@ -4,7 +4,7 @@ interface ErrorAlertProps {
   message: string;
 }
 
-export default function ErrorAlert({ message }: ErrorAlertProps) {
+export default function ErrorAlert({ }: ErrorAlertProps) {
   return (
     <div></div>
   );

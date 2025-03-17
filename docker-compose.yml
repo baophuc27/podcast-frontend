@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3030}:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - podcast_audio:/app/podcast_audio
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  podcast_audio:
+    driver: local

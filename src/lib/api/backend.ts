@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 
+// Define a proper type for the payload instead of using 'any'
+type BackendPayload = Record<string, unknown>;
+
 type BackendRequestOptions = {
   endpoint: string;
-  payload: any;
+  payload: BackendPayload;
   timeout?: number;
   host?: string;
 };
@@ -10,7 +13,7 @@ type BackendRequestOptions = {
 /**
  * Makes a request to the Python backend service
  */
-export async function callBackendService<T>({ endpoint, payload, timeout = 60000, host }: BackendRequestOptions): Promise<NextResponse> {
+export async function callBackendService({ endpoint, payload, timeout = 60000, host }: BackendRequestOptions): Promise<NextResponse> {
   try {
     // Use the provided host or default to the main backend
     const backend_url = host || 'http://localhost:8172';
@@ -43,7 +46,7 @@ export async function callBackendService<T>({ endpoint, payload, timeout = 60000
     // Check if it's a timeout error
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     const isTimeout = errorMessage.includes('timeout') || 
-      (error instanceof Error && 'code' in error && (error as any).code === 23);
+      (error instanceof Error && 'code' in error && (error as { code: number }).code === 23);
       
     if (isTimeout) {
       return NextResponse.json(

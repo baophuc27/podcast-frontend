@@ -1,7 +1,7 @@
 /**
  * Client-side API functions for interacting with the podcast generation service
  */
-import { PodcastData, APIResponse, SpeakerProfile, PodcastGenerationPayload } from '@/types/podcast';
+import { PodcastData, APIResponse, PodcastGenerationPayload } from '@/types/podcast';
 
 /**
  * Generate a podcast from a list of URLs

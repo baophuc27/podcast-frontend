@@ -1,0 +1,26 @@
+# Base Node.js image
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy the rest of the application
+COPY . .
+
+# Create podcast_audio directory with proper permissions
+RUN mkdir -p podcast_audio && chmod 777 podcast_audio
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+ENV NODE_ENV development
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Run in development mode
+CMD ["npm", "run", "dev"]
