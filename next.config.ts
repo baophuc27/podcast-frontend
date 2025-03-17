@@ -5,19 +5,24 @@ const nextConfig: NextConfig = {
   redirects: async () => {
     return [
       {
-        // Only redirect if not coming from podcast
+        // Only redirect if not coming from podcast and not already redirected
         source: '/',
         destination: '/podcast',
         permanent: true,
-        // Skip redirect if there's a redirected parameter
+        // Skip redirect if there's a redirected parameter OR if the user is not authenticated
         has: [
           {
             type: 'query',
             key: 'redirected',
+            // If redirected=true exists, skip the redirect
             value: 'true',
-            // Skip the redirect if this query parameter exists
-            // This prevents the redirect loop
             negative: true
+          },
+          {
+            type: 'cookie',
+            key: 'auth_token',
+            // Only redirect if auth_token exists
+            value: 'authenticated'
           }
         ]
       },
