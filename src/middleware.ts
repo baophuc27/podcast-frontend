@@ -1,41 +1,45 @@
+// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// This function can be marked `async` if using `await` inside
+// Keep track of redirects to prevent loops
+const redirectTracker = new Map<string, number>();
+
 export function middleware(request: NextRequest) {
-  // Get the pathname of the request
   const path = request.nextUrl.pathname;
-
-  // Define public paths that don't require authentication
-  const isPublicPath = path === '/' || 
-                       path.startsWith('/api/auth') || 
-                       path.includes('_next') || 
-                       path.includes('.png') ||
-                       path.includes('.ico') ||
-                       path.includes('.svg');
-
-  // Get the authentication token from the cookies
-  const isAuthenticated = request.cookies.get('auth_token')?.value;
-
-  // Redirect logic for protected routes
-  if (!isPublicPath && !isAuthenticated) {
-    // Redirect to login page if trying to access protected route without auth
+  const ip = request.ip || 'unknown';
+  const requestId = `${ip}-${path}`;
+  
+  // Count redirects for this specific request path
+  const redirectCount = redirectTracker.get(requestId) || 0;
+  
+  // Get auth token
+  const authToken = request.cookies.get('auth_token')?.value;
+  
+  console.log(`Path: ${path}, Auth: ${!!authToken}, Redirects: ${redirectCount}`);
+  
+  // Only protect /podcast path and limit redirects to prevent loops
+  if (path.startsWith('/podcast') && !authToken && redirectCount < 1) {
+    // Increment redirect count
+    redirectTracker.set(requestId, redirectCount + 1);
+    
+    // After 10 seconds, reset the count (cleanup)
+    setTimeout(() => {
+      redirectTracker.delete(requestId);
+    }, 10000);
+    
+    console.log(`Redirecting to login, count: ${redirectCount + 1}`);
     return NextResponse.redirect(new URL('/', request.url));
   }
-
+  
+  // Reset redirect count if it exists
+  if (redirectTracker.has(requestId)) {
+    redirectTracker.delete(requestId);
+  }
+  
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * 1. /api/auth routes (for login/logout)
-     * 2. /_next routes (for static files)
-     * 3. /_vercel routes (for static files)
-     * 4. All static files (favicon, images, etc)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/podcast/:path*'],
 };

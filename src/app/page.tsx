@@ -10,32 +10,40 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Check if already authenticated on page load
+  // Check if we were redirected here due to missing auth
   useEffect(() => {
-    // We no longer need to redirect here as middleware handles it
-    // This prevents potential redirect loops
+    // If we were redirected from a protected route, show a message
+    if (typeof window !== 'undefined' && window.location.search.includes('redirected=true')) {
+      setError('Please log in to access the podcast page');
+    }
+    
+    // Do NOT add any automatic redirects here!
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         // Store username in localStorage (for display purposes only)
         localStorage.setItem('username', username);
         
-        // Redirect to podcast page
-        router.push('/podcast');
+        // Get the 'from' parameter if it exists, otherwise default to '/podcast'
+        const searchParams = new URLSearchParams(window.location.search);
+        const from = searchParams.get('from') || '/podcast';
+        
+        // Redirect to podcast page or the original requested URL
+        router.push(from);
       } else {
         setError(data.error || 'Authentication failed');
       }
