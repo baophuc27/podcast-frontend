@@ -8,28 +8,18 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // Add state for auth checking
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
-  // Check if user is already authenticated when page loads
+  // Simplified auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Avoid auth check if we were redirected here
-        if (typeof window !== 'undefined' && 
-            (window.location.search.includes('redirected=true') || 
-             window.location.search.includes('from='))) {
-          setCheckingAuth(false);
-          return;
-        }
-        
-        // Call the auth check API
         const response = await fetch('/api/auth/check');
         const data = await response.json();
         
         // If authenticated, redirect to podcast page
         if (data.isAuthenticated) {
-          console.log('Already authenticated, redirecting to podcast page');
           router.push('/podcast');
         }
       } catch (err) {
@@ -41,14 +31,6 @@ export default function AuthPage() {
     
     checkAuth();
   }, [router]);
-
-  // Check if we were redirected here due to missing auth
-  useEffect(() => {
-    // If we were redirected from a protected route, show a message
-    if (typeof window !== 'undefined' && window.location.search.includes('redirected=true')) {
-      setError('Please log in to access the podcast page');
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +50,8 @@ export default function AuthPage() {
         // Store username in localStorage (for display purposes only)
         localStorage.setItem('username', username);
         
-        // Get the 'from' parameter if it exists, otherwise default to '/podcast'
-        const searchParams = new URLSearchParams(window.location.search);
-        const from = searchParams.get('from') || '/podcast';
-        
-        // Redirect to podcast page or the original requested URL
-        router.push(from);
+        // Always redirect to podcast page after successful login
+        router.push('/podcast');
       } else {
         setError(data.error || 'Authentication failed');
       }
