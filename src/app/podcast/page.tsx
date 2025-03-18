@@ -35,13 +35,18 @@ export default function PodcastGenerator() {
   
 
   // Helper function to convert duration string to number
-  const getDurationInMinutes = (durationString: string): number => {
-    switch (durationString) {
-      case 'Short': return 2;  // 1-3 minutes
-      case 'Long': return 7;   // 8-10 minutes
-      default: return 4;       // Medium (4-7 minutes)
-    }
-  };
+// Update this function in src/app/podcast/page.tsx to handle the new duration values
+
+// Helper function to convert duration string to number
+const getDurationInMinutes = (durationString: string): number => {
+  switch (durationString) {
+    case 'Very Short': return 1.5;  // 1-2 minutes
+    case 'Short': return 4;         // 3-5 minutes
+    case 'Medium': return 7;        // 6-8 minutes
+    case 'Long': return 10;         // 9-12 minutes
+    default: return 4;              // Default to Short if unrecognized
+  }
+};
 
   const handleFormSubmit = async (formData: PodcastFormData) => {
     setLoading(true);

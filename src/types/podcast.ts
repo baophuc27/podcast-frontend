@@ -1,6 +1,4 @@
-/**
- * Types for the podcast generator application
- */
+// Update this in src/types/podcast.ts
 
 export type PodcastData = {
   speaker: string;
@@ -8,7 +6,7 @@ export type PodcastData = {
   speakerProfile?: SpeakerProfile; // Add optional speakerProfile property
 };
 
-// Also ensure we add speed to SpeakerProfile
+// Ensure we add speed to SpeakerProfile
 export type SpeakerProfile = {
   id: number;
   name: string;
@@ -29,16 +27,18 @@ export type APIResponse = {
   audio_files?: AudioFiles;
   individual_files?: { [key: string]: string[] };
   full_audio_path?: string;
-  podcast_dir?: string; // Add this to match the backend response
+  podcast_dir?: string; 
   error?: string;
 };
 
+// Updated PodcastGenerationPayload to include the new podcast types
 export type PodcastGenerationPayload = {
   input_urls: string[];
   guidelines: string;
   duration: number;
   speaker_ids: number[];
-  podcast_type: string;
+  podcast_type: string; // Can be 'Solo Briefing', 'Alternating Briefing', or 'Discussion'
   max_revisions: number;
   speaker_profiles: SpeakerProfile[];
+  speaker_speeds?: { [speakerId: number]: number }; // Optional speaker speeds
 };

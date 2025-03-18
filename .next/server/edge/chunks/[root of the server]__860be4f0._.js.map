@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 23, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/middleware.ts"],"sourcesContent":["// src/middleware.ts\nimport { NextResponse } from 'next/server';\nimport type { NextRequest } from 'next/server';\n\nexport function middleware(request: NextRequest) {\n  const path = request.nextUrl.pathname;\n  \n  // Get auth token\n  const authToken = request.cookies.get('auth_token')?.value;\n  \n  // Only protect /podcast path\n  if (path.startsWith('/podcast') && !authToken) {\n    // Simply redirect to login page\n    return NextResponse.redirect(new URL('/', request.url));\n  }\n  \n  return NextResponse.next();\n}\n\nexport const config = {\n  matcher: ['/podcast/:path*'],\n};"],"names":[],"mappings":"AAAA,oBAAoB;;;;;AACpB;AAAA;;AAGO,SAAS,WAAW,OAAoB;IAC7C,MAAM,OAAO,QAAQ,OAAO,CAAC,QAAQ;IAErC,iBAAiB;IACjB,MAAM,YAAY,QAAQ,OAAO,CAAC,GAAG,CAAC,eAAe;IAErD,6BAA6B;IAC7B,IAAI,KAAK,UAAU,CAAC,eAAe,CAAC,WAAW;QAC7C,gCAAgC;QAChC,OAAO,6LAAA,CAAA,eAAY,CAAC,QAAQ,CAAC,IAAI,IAAI,KAAK,QAAQ,GAAG;IACvD;IAEA,OAAO,6LAAA,CAAA,eAAY,CAAC,IAAI;AAC1B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;KAAkB;AAC9B"}}]
+}

@@ -1,35 +1,36 @@
+// src/components/podcast/PodcastStyleSelector.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Style presets that combine format and quality
 export const PODCAST_STYLES = [
   {
-    id: 'casual-balanced',
-    name: 'Casual Conversation',
-    description: 'Relaxed dialogue with moderate depth',
-    podcastType: 'Discussion',
-    duration: 'Medium',
+    id: 'traditional-news',
+    name: 'Traditional News',
+    description: 'Maintain neutral perspectives while providing information',
+    podcastType: 'Alternating Briefing',
+    duration: 'Short',
     maxRevisions: 2,
-    guidelines: ''
+    guidelines: 'Luân phiên giữa các người dẫn cho các tin tức theo cách ngắn gọn khách quan'
   },
   {
-    id: 'interview-deep',
-    name: 'In-depth Interview',
-    description: 'Thorough question-answer format',
-    podcastType: 'Interview',
-    duration: 'Long',
+    id: 'casual-balanced',
+    name: 'Interactive Discussion',
+    description: 'Conversational, natural dialogue with follow-up questions to deepen the conversation',
+    podcastType: 'Discussion',
+    duration: 'Medium',
     maxRevisions: 3,
-    guidelines: ''
+    guidelines: 'Đối thoại tự nhiên, đặt câu hỏi để mở rộng và đào sâu cuộc trò chuyện'
   },
   {
     id: 'quick-brief',
     name: 'Quick Briefing',
     description: 'Fast-paced essential information',
-    podcastType: 'Discussion',
-    duration: 'Short',
+    podcastType: 'Solo Briefing',
+    duration: 'Very Short',
     maxRevisions: 1,
-    guidelines: ''
+    guidelines: 'Tập trung vào thông tin chính yếu, sử dụng ngôn ngữ đơn giản, rõ ràng'
   },
   {
     id: 'custom',
@@ -54,13 +55,32 @@ interface PodcastStyleSelectorProps {
 export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSelectorProps) {
   const [selectedStyleId, setSelectedStyleId] = useState('casual-balanced');
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
-  const [customGuidelines, setCustomGuidelines] = useState('');
-  const [customPodcastType, setCustomPodcastType] = useState(PODCAST_STYLES[0].podcastType);
-  const [customDuration, setCustomDuration] = useState(PODCAST_STYLES[0].duration);
-  const [customMaxRevisions, setCustomMaxRevisions] = useState(PODCAST_STYLES[0].maxRevisions);
+  const [customGuidelines, setCustomGuidelines] = useState(PODCAST_STYLES[1].guidelines); // Set default to Interactive Discussion guidelines
+  const [customPodcastType, setCustomPodcastType] = useState(PODCAST_STYLES[1].podcastType);
+  const [customDuration, setCustomDuration] = useState(PODCAST_STYLES[1].duration);
+  const [customMaxRevisions, setCustomMaxRevisions] = useState(PODCAST_STYLES[1].maxRevisions);
+  
+  // Initialize with the default selected style when component mounts
+  useEffect(() => {
+    const style = PODCAST_STYLES.find(s => s.id === selectedStyleId);
+    if (style) {
+      setCustomGuidelines(style.guidelines);
+      setCustomPodcastType(style.podcastType);
+      setCustomDuration(style.duration);
+      setCustomMaxRevisions(style.maxRevisions);
+      
+      // Notify parent component about initial style
+      onStyleChange({
+        podcastType: style.podcastType,
+        duration: style.duration,
+        guidelines: style.guidelines,
+        maxRevisions: style.maxRevisions
+      });
+    }
+  }, []);
   
   // Get the selected style template
-  const selectedStyle = PODCAST_STYLES.find(style => style.id === selectedStyleId) || PODCAST_STYLES[0];
+  const selectedStyle = PODCAST_STYLES.find(style => style.id === selectedStyleId) || PODCAST_STYLES[1];
   
   // Create the actual style with potentially customized values
   const currentStyle = {
@@ -88,11 +108,6 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
         guidelines: style.guidelines,
         maxRevisions: style.maxRevisions
       });
-    }
-    
-    // If custom style is selected, expand the settings panel
-    if (styleId === 'custom') {
-      // You could add special handling for custom style here if needed
     }
     
     setIsStyleMenuOpen(false);
@@ -212,31 +227,20 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
           </div>
         )}
 
-        {/* Custom Style Settings */}
+        {/* Custom Style Settings - REARRANGED ORDER */}
         <div className={`mt-4 space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 ${selectedStyleId === 'custom' ? 'border-indigo-300 dark:border-indigo-700' : ''}`}>
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Guidelines (Optional)</label>
-            <textarea 
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              rows={3}
-              placeholder="Enter specific instructions for tone, topics to emphasize, or content approach..."
-              value={customGuidelines}
-              onChange={handleCustomGuidelinesChange}
-            />
-          </div>
-          
+          {/* Three settings first */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Podcast Type</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Format</label>
               <select 
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 value={customPodcastType}
                 onChange={handleCustomPodcastTypeChange}
               >
+                <option value="Solo Briefing">Solo Briefing</option>
+                <option value="Alternating Briefing">Alternating Briefing</option>
                 <option value="Discussion">Discussion</option>
-                <option value="Interview">Interview</option>
-                <option value="Narrative">Narrative</option>
-                <option value="Educational">Educational</option>
               </select>
             </div>
             
@@ -247,9 +251,10 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
                 value={customDuration}
                 onChange={handleCustomDurationChange}
               >
-                <option value="Short">Short (1-2 min)</option>
-                <option value="Medium">Medium (3-5 min)</option>
-                <option value="Long">Long (6-8 min)</option>
+                <option value="Very Short">Very Short (1-2 min)</option>
+                <option value="Short">Short (3-5 min)</option>
+                <option value="Medium">Medium (6-8 min)</option>
+                <option value="Long">Long (9-12 min)</option>
               </select>
             </div>
             
@@ -265,6 +270,18 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
                 <option value="3">High Quality (thorough revisions)</option>
               </select>
             </div>
+          </div>
+          
+          {/* Guidelines textarea moved below */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Guidelines (Optional)</label>
+            <textarea 
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              rows={3}
+              placeholder="Enter specific instructions for tone, topics to emphasize, or content approach..."
+              value={customGuidelines}
+              onChange={handleCustomGuidelinesChange}
+            />
           </div>
         </div>
       </div>
