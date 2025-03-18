@@ -80,9 +80,15 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
   };
 
   const handleCustomPodcastTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCustomPodcastType(e.target.value);
+    // Get the new podcast type
+    const newPodcastType = e.target.value;
+    
+    // Update the state
+    setCustomPodcastType(newPodcastType);
+    
+    // Notify parent about the change
     onStyleChange({
-      podcastType: e.target.value,
+      podcastType: newPodcastType,
       duration: customDuration,
       guidelines: customGuidelines,
       maxRevisions: customMaxRevisions // Always use high quality

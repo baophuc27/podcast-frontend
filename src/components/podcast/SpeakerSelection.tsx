@@ -33,6 +33,19 @@ export default function SpeakerSelection({
   const [guestMenuOpen, setGuestMenuOpen] = useState(false);
   const [isSpeedModalOpen, setIsSpeedModalOpen] = useState(false);
   
+  // Enforce Mai Lan (ID 0) and Minh Tú (ID 1) for Discussion podcast type
+  useEffect(() => {
+    if (podcastType === 'Discussion') {
+      // Force Mai Lan as host (ID 0) and Minh Tú as guest (ID 1) when Discussion is selected
+      if (selectedSpeakers[0] !== 0 || selectedSpeakers[1] !== 1) {
+        onChange([0, 1]);
+      }
+    } else if (podcastType === 'Solo Briefing' && selectedSpeakers.length > 1) {
+      // For Solo Briefing, keep only the host speaker
+      onChange([selectedSpeakers[0]]);
+    }
+  }, [podcastType, selectedSpeakers, onChange]);
+  
   const hostSpeaker = selectedSpeakers[0] !== undefined ? SPEAKER_PROFILES.find(s => s.id === selectedSpeakers[0]) : null;
   const guestSpeaker = selectedSpeakers[1] !== undefined ? SPEAKER_PROFILES.find(s => s.id === selectedSpeakers[1]) : null;
   
@@ -43,17 +56,14 @@ export default function SpeakerSelection({
 
   // Check if we're in Solo Briefing mode
   const isSoloBriefing = podcastType === 'Solo Briefing';
-
-  // Effect to remove guest speaker when switching to Solo Briefing
-  useEffect(() => {
-    if (isSoloBriefing && selectedSpeakers.length > 1 && selectedSpeakers[1] !== undefined) {
-      // Remove the guest speaker when switching to Solo Briefing
-      const newSelection = [selectedSpeakers[0]];
-      onChange(newSelection);
-    }
-  }, [isSoloBriefing, selectedSpeakers, onChange]);
+  
+  // Check if we're in Discussion mode (for locking UI)
+  const isDiscussion = podcastType === 'Discussion';
 
   const selectHost = (speakerId: number) => {
+    // If we're in Discussion mode, don't allow changing the host
+    if (isDiscussion) return;
+    
     const newSelection = [...selectedSpeakers];
     
     // If this speaker is already selected as guest, reset guest
@@ -67,7 +77,8 @@ export default function SpeakerSelection({
   };
 
   const selectGuest = (speakerId: number) => {
-    if (isSoloBriefing) return; // Don't allow guest selection in Solo Briefing mode
+    // If we're in Discussion mode or Solo Briefing mode, don't allow changing the guest
+    if (isDiscussion || isSoloBriefing) return;
     
     const newSelection = [...selectedSpeakers];
     newSelection[1] = speakerId;
@@ -128,8 +139,10 @@ export default function SpeakerSelection({
         <div className="relative">
           <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Host Voice</label>
           <div 
-            className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 p-3 flex items-center justify-between cursor-pointer"
-            onClick={() => setHostMenuOpen(!hostMenuOpen)}
+            className={`border border-gray-300 dark:border-gray-600 rounded-lg p-3 flex items-center justify-between ${
+              isDiscussion ? 'cursor-not-allowed opacity-60 bg-gray-100 dark:bg-gray-800' : 'cursor-pointer bg-white dark:bg-gray-700'
+            }`}
+            onClick={() => !isDiscussion && setHostMenuOpen(!hostMenuOpen)}
           >
             {hostSpeaker ? (
               <div className="flex items-center">
@@ -171,13 +184,16 @@ export default function SpeakerSelection({
             ) : (
               <span className="text-gray-500">Select host voice</span>
             )}
-            <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
-            </svg>
+            {!isDiscussion && (
+              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
+              </svg>
+            )}
+
           </div>
           
           {/* Host Dropdown */}
-          {hostMenuOpen && (
+          {hostMenuOpen && !isDiscussion && (
             <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
               {SPEAKER_PROFILES.map(speaker => {
                 const styleTags = getStyleTags(speaker.mc_guidelines);
@@ -249,7 +265,7 @@ export default function SpeakerSelection({
         </div>
         
         {/* Guest Voice Selection - Conditionally disabled for Solo Briefing */}
-        <div className={`relative ${isSoloBriefing ? 'opacity-50' : ''}`}>
+        <div className={`relative ${isSoloBriefing || isDiscussion ? 'opacity-60' : ''}`}>
           <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
             <span>Guest Voice</span>
             {isSoloBriefing && (
@@ -257,10 +273,10 @@ export default function SpeakerSelection({
             )}
           </label>
           <div 
-            className={`border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 p-3 flex items-center justify-between ${
-              isSoloBriefing ? 'cursor-not-allowed' : 'cursor-pointer'
+            className={`border border-gray-300 dark:border-gray-600 rounded-lg p-3 flex items-center justify-between ${
+              isSoloBriefing || isDiscussion ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-800' : 'cursor-pointer bg-white dark:bg-gray-700'
             }`}
-            onClick={() => !isSoloBriefing && setGuestMenuOpen(!guestMenuOpen)}
+            onClick={() => !isSoloBriefing && !isDiscussion && setGuestMenuOpen(!guestMenuOpen)}
           >
             {guestSpeaker ? (
               <div className="flex items-center">
@@ -288,9 +304,8 @@ export default function SpeakerSelection({
                     </span>
                     <button 
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 transition-colors"
-                      onClick={(e) => !isSoloBriefing && playAudio(guestSpeaker.id, e)}
+                      onClick={(e) => playAudio(guestSpeaker.id, e)}
                       type="button"
-                      disabled={isSoloBriefing}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -303,13 +318,16 @@ export default function SpeakerSelection({
             ) : (
               <span className="text-gray-500">{isSoloBriefing ? 'Not available' : 'Select guest voice'}</span>
             )}
-            <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
-            </svg>
+            {!isSoloBriefing && !isDiscussion && (
+              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
+              </svg>
+            )}
+ 
           </div>
           
           {/* Guest Dropdown */}
-          {!isSoloBriefing && guestMenuOpen && (
+          {!isSoloBriefing && !isDiscussion && guestMenuOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
               {SPEAKER_PROFILES.map(speaker => {
                 const styleTags = getStyleTags(speaker.mc_guidelines);

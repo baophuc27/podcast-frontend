@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { SpeakerProfile } from '@/types/podcast';
 import SpeakerSelection from './SpeakerSelection';
 import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
@@ -41,6 +41,15 @@ export default function PodcastForm({
   const [duration, setDuration] = useState<string>(PODCAST_STYLES[0].duration);
   const [maxRevisions, setMaxRevisions] = useState<number>(PODCAST_STYLES[0].maxRevisions);
 
+  // Effect to enforce speaker selection based on podcast type
+  useEffect(() => {
+    // When podcast type is "Discussion", force speaker selection to be Mai Lan and Minh Tú
+    if (podcastType === 'Discussion') {
+      // Mai Lan (ID 0) as host, Minh Tú (ID 1) as guest
+      setSelectedSpeakers([0, 1]);
+    }
+  }, [podcastType]);
+
   const handleStyleChange = (style: { 
     podcastType: string; 
     duration: string; 
@@ -51,6 +60,12 @@ export default function PodcastForm({
     setDuration(style.duration);
     setGuidelines(style.guidelines);
     setMaxRevisions(style.maxRevisions);
+    
+    // If changing to Discussion, enforce speaker selection
+    if (style.podcastType === 'Discussion' && 
+        (selectedSpeakers[0] !== 0 || selectedSpeakers[1] !== 1)) {
+      setSelectedSpeakers([0, 1]);
+    }
   };
 
   // Handle speed changes for a specific speaker
