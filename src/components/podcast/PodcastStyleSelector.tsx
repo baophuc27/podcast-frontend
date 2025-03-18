@@ -181,7 +181,7 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">{selectedStyle.name}</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {selectedStyle.duration} • {getQualityLevel(currentStyle.maxRevisions)}
+                {selectedStyle.podcastType} • {selectedStyle.duration} • {getQualityLevel(currentStyle.maxRevisions)}
                 </div>
               </div>
             </div>
