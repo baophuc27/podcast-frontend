@@ -1,2 +1,3 @@
-podcast_audio/
-node_modules/
+podcast_audio/*
+node_modules/*
+.next/*

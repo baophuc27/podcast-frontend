@@ -1,7 +1,7 @@
 // src/components/podcast/PodcastStyleSelector.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Style presets that combine format and quality
 export const PODCAST_STYLES = [
@@ -12,7 +12,7 @@ export const PODCAST_STYLES = [
     podcastType: 'Alternating Briefing',
     duration: 'Short',
     maxRevisions: 2,
-    guidelines: 'Luân phiên giữa các người dẫn cho các tin tức theo cách ngắn gọn khách quan'
+    guidelines: ''
   },
   {
     id: 'casual-balanced',
@@ -21,7 +21,7 @@ export const PODCAST_STYLES = [
     podcastType: 'Discussion',
     duration: 'Medium',
     maxRevisions: 3,
-    guidelines: 'Đối thoại tự nhiên, đặt câu hỏi để mở rộng và đào sâu cuộc trò chuyện'
+    guidelines: ''
   },
   {
     id: 'quick-brief',
@@ -30,7 +30,7 @@ export const PODCAST_STYLES = [
     podcastType: 'Solo Briefing',
     duration: 'Very Short',
     maxRevisions: 1,
-    guidelines: 'Tập trung vào thông tin chính yếu, sử dụng ngôn ngữ đơn giản, rõ ràng'
+    guidelines: ''
   },
   {
     id: 'custom',
@@ -90,6 +90,44 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
     duration: customDuration,
     maxRevisions: customMaxRevisions
   };
+  
+  // Function to get the display name based on current settings
+  const getDisplayStyleName = useCallback(() => {
+    // Find a matching predefined style based on current settings
+    const matchingStyle = PODCAST_STYLES.find(style => 
+      style.id !== 'custom' && 
+      style.guidelines === customGuidelines &&
+      style.podcastType === customPodcastType &&
+      style.duration === customDuration &&
+      style.maxRevisions === customMaxRevisions
+    );
+    
+    // Return the matching style name or "Custom Style" if no match
+    return matchingStyle ? matchingStyle.name : "Custom Style";
+  }, [customGuidelines, customPodcastType, customDuration, customMaxRevisions]);
+
+  // Function to check if current settings match a predefined style
+  const checkIfCustomStyle = useCallback(() => {
+    const matchingStyle = PODCAST_STYLES.find(style => 
+      style.id !== 'custom' && 
+      style.guidelines === customGuidelines &&
+      style.podcastType === customPodcastType &&
+      style.duration === customDuration &&
+      style.maxRevisions === customMaxRevisions
+    );
+
+    // If no matching style found, switch to custom
+    if (!matchingStyle) {
+      if (selectedStyleId !== 'custom') {
+        setSelectedStyleId('custom');
+      }
+    } else {
+      // If there's a matching style, update the selectedStyleId to match
+      if (selectedStyleId !== matchingStyle.id) {
+        setSelectedStyleId(matchingStyle.id);
+      }
+    }
+  }, [customGuidelines, customPodcastType, customDuration, customMaxRevisions, selectedStyleId]);
 
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyleId(styleId);
@@ -121,6 +159,9 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
       guidelines: e.target.value,
       maxRevisions: customMaxRevisions
     });
+    
+    // Check if we need to switch to custom style
+    setTimeout(() => checkIfCustomStyle(), 0);
   };
 
   const handleCustomPodcastTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -131,6 +172,9 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
       guidelines: customGuidelines,
       maxRevisions: customMaxRevisions
     });
+    
+    // Check if we need to switch to custom style
+    setTimeout(() => checkIfCustomStyle(), 0);
   };
 
   const handleCustomDurationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -141,6 +185,9 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
       guidelines: customGuidelines,
       maxRevisions: customMaxRevisions
     });
+    
+    // Check if we need to switch to custom style
+    setTimeout(() => checkIfCustomStyle(), 0);
   };
 
   const handleMaxRevisionsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -152,6 +199,9 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
       guidelines: customGuidelines,
       maxRevisions: revisions
     });
+    
+    // Check if we need to switch to custom style
+    setTimeout(() => checkIfCustomStyle(), 0);
   };
 
   // Helper to get quality level text from max revisions
@@ -179,9 +229,9 @@ export default function PodcastStyleSelector({ onStyleChange }: PodcastStyleSele
                 </svg>
               </div>
               <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">{selectedStyle.name}</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">{getDisplayStyleName()}</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                {selectedStyle.podcastType} • {selectedStyle.duration} • {getQualityLevel(currentStyle.maxRevisions)}
+                {customPodcastType} • {customDuration} • {getQualityLevel(customMaxRevisions)}
                 </div>
               </div>
             </div>

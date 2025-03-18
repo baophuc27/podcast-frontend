@@ -27,26 +27,26 @@ export default function PodcastGenerator() {
       console.log("Individual files (raw):", apiResponse.individual_files);
     }
   }, [apiResponse]);
-  
+
   // Improved podcast directory handling
   useEffect(() => {
     console.log("Podcast directory set to:", podcastDir);
   }, [podcastDir]);
-  
+
 
   // Helper function to convert duration string to number
-// Update this function in src/app/podcast/page.tsx to handle the new duration values
+  // Update this function in src/app/podcast/page.tsx to handle the new duration values
 
-// Helper function to convert duration string to number
-const getDurationInMinutes = (durationString: string): number => {
-  switch (durationString) {
-    case 'Very Short': return 1.5;  // 1-2 minutes
-    case 'Short': return 4;         // 3-5 minutes
-    case 'Medium': return 7;        // 6-8 minutes
-    case 'Long': return 10;         // 9-12 minutes
-    default: return 4;              // Default to Short if unrecognized
-  }
-};
+  // Helper function to convert duration string to number
+  const getDurationInMinutes = (durationString: string): number => {
+    switch (durationString) {
+      case 'Very Short': return 2;  // 1-2 minutes
+      case 'Short': return 4;         // 3-5 minutes
+      case 'Medium': return 7;        // 6-8 minutes
+      case 'Long': return 10;         // 9-12 minutes
+      default: return 4;              // Default to Short if unrecognized
+    }
+  };
 
   const handleFormSubmit = async (formData: PodcastFormData) => {
     setLoading(true);
@@ -57,7 +57,7 @@ const getDurationInMinutes = (durationString: string): number => {
     setFinalAudioUrl('');
     setError(null);
     setPodcastDir('');
-  
+
     // Enhanced payload with speaker speeds
     const payload = {
       input_urls: formData.urlList,
@@ -69,7 +69,7 @@ const getDurationInMinutes = (durationString: string): number => {
       speaker_profiles: formData.speakerProfiles,
       speaker_speeds: formData.speakerSpeeds // Include speaker speeds
     };
-  
+
     try {
       // Start progress animation for script generation (0-50%)
       let progress = 0;
@@ -80,50 +80,50 @@ const getDurationInMinutes = (durationString: string): number => {
           clearInterval(interval);
         }
       }, 300);
-  
+
       // Make API call to backend to generate script
       const response = await fetch('/api/podcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-  
+
       clearInterval(interval);
       const responseData: APIResponse = await response.json();
       console.log("Script generation response:", responseData);
-      
+
       if (responseData.status_code === 0) {
         // Script generated successfully, now generate audio
         setAudioProgress(50);
-        
+
         // Create a podcast directory if one wasn't provided
         const dirPath = responseData.podcast_dir || `podcast_audio/podcast_${Date.now()}`;
         setPodcastDir(dirPath);
         console.log("Using podcast directory:", dirPath);
-        
+
         // Prepare data for batch audio generation by adding speaker profiles with speeds
         const podcastDataWithProfiles = responseData.data.map(item => {
           // Find the matching speaker profile
           const speakerProfile = formData.speakerProfiles.find(
-            profile => (item.speaker.includes("MC1") && profile.id === formData.speakerIds[0]) || 
-                       (item.speaker.includes("MC2") && profile.id === formData.speakerIds[1])
+            profile => (item.speaker.includes("MC1") && profile.id === formData.speakerIds[0]) ||
+              (item.speaker.includes("MC2") && profile.id === formData.speakerIds[1])
           );
-          
+
           return {
             ...item,
             speakerProfile: speakerProfile || undefined
           };
         });
-        
+
         // Generate audio for all utterances
         const audioResult = await generateBatchAudio(podcastDataWithProfiles, dirPath);
-        
+
         if (audioResult.success && audioResult.audioFiles) {
           // Update the response with generated audio files
           responseData.audio_files = audioResult.audioFiles;
           responseData.individual_files = audioResult.individualFiles;
           responseData.podcast_dir = dirPath;
-          
+
           setAudioProgress(100);
           setApiResponse(responseData);
           setEditedPodcastData(podcastDataWithProfiles); // Use the enhanced data with profiles
@@ -137,7 +137,7 @@ const getDurationInMinutes = (durationString: string): number => {
         setApiResponse(responseData);
         setError(responseData.error || 'An error occurred during podcast generation');
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error generating podcast:', error);
@@ -162,7 +162,7 @@ const getDurationInMinutes = (durationString: string): number => {
       setError("Cannot generate podcast: podcast directory not available");
       return;
     }
-    
+
     setLoading(true);
     setAudioProgress(0);
     setError(null);
@@ -179,17 +179,17 @@ const getDurationInMinutes = (durationString: string): number => {
 
       // Call the API to generate the full podcast
       const result = await generateFullPodcastAudio(editedPodcastData, podcastDir);
-      
+
       clearInterval(interval);
       setAudioProgress(100);
-      
+
       if (result.success && result.audioUrl) {
         setFinalAudioUrl(result.audioUrl);
         setGeneratedFinal(true);
       } else {
         setError(result.error || 'Failed to generate final podcast audio');
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error generating final podcast:', error);
@@ -202,8 +202,8 @@ const getDurationInMinutes = (durationString: string): number => {
   const activateDemoMode = () => {
     // Create a simulated response with sample data
     const demoData: PodcastData[] = [
-      { 
-        speaker: "MC1", 
+      {
+        speaker: "MC1",
         content: "Welcome to our podcast! Today we're discussing the fascinating world of AI and how it's transforming content creation.",
         speakerProfile: {
           id: 0,
@@ -214,8 +214,8 @@ const getDurationInMinutes = (durationString: string): number => {
           speed: 1.0
         }
       },
-      { 
-        speaker: "MC2", 
+      {
+        speaker: "MC2",
         content: "That's right! We've seen incredible advances in machine learning that are making it possible to generate professional-sounding podcasts automatically.",
         speakerProfile: {
           id: 1,
@@ -226,8 +226,8 @@ const getDurationInMinutes = (durationString: string): number => {
           speed: 1.0
         }
       },
-      { 
-        speaker: "MC1", 
+      {
+        speaker: "MC1",
         content: "Exactly. What's most impressive is how natural the conversations can sound, with proper intonation and emphasis.",
         speakerProfile: {
           id: 0,
@@ -239,27 +239,27 @@ const getDurationInMinutes = (durationString: string): number => {
         }
       }
     ];
-    
+
     // Create simulated audio files that match your API's format
     // For each utterance, we'll have a single audio file
     const demoIndividualFiles = {
-      "MC1_0": ["/demo/mc1_0_0.wav"], 
+      "MC1_0": ["/demo/mc1_0_0.wav"],
       "MC2_1": ["/demo/mc2_1_0.wav"],
-      "MC1_2": ["/demo/mc1_2_0.wav"] 
+      "MC1_2": ["/demo/mc1_2_0.wav"]
     };
-    
+
     // Now convert to the expected format for our components
     const demoAudioFiles = {
       "utterance_0": demoIndividualFiles["MC1_0"],
       "utterance_1": demoIndividualFiles["MC2_1"],
       "utterance_2": demoIndividualFiles["MC1_2"]
     };
-    
+
     // Important: Set the podcast directory for demo mode
     const demoPodcastDir = "demo_podcast_dir";
     setPodcastDir(demoPodcastDir);
     console.log("Setting demo podcast directory:", demoPodcastDir);
-    
+
     setApiResponse({
       status_code: 0,
       data: demoData,
@@ -267,22 +267,22 @@ const getDurationInMinutes = (durationString: string): number => {
       audio_files: demoAudioFiles,
       podcast_dir: demoPodcastDir
     });
-    
+
     setEditedPodcastData(demoData);
     setError(null);
   };
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 pt-12">
-      
+
       {error && (
-        <ErrorAlert 
-          message={error} 
-          onDemoMode={activateDemoMode} 
+        <ErrorAlert
+          message={error}
+          onDemoMode={activateDemoMode}
         />
       )}
-      
-      <PodcastForm 
+
+      <PodcastForm
         onSubmit={handleFormSubmit}
         loading={loading}
       />
@@ -318,7 +318,7 @@ const getDurationInMinutes = (durationString: string): number => {
 
           {editedPodcastData.length > 0 && (
             <>
-              <PodcastScript 
+              <PodcastScript
                 podcastData={editedPodcastData}
                 audioFiles={apiResponse.audio_files}
                 podcastDir={podcastDir} // Pass the podcast directory here
@@ -326,7 +326,7 @@ const getDurationInMinutes = (durationString: string): number => {
                 onGenerateFinal={regenerateFullPodcast}
                 loading={loading}
               />
-              
+
               {generatedFinal && (
                 <PodcastFinal audioUrl={finalAudioUrl} />
               )}

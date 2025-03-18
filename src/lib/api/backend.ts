@@ -18,9 +18,9 @@ export async function callBackendService({ endpoint, payload, timeout = 60000, h
     // Use the provided host or default to the main backend
     const backend_url = host || 'http://localhost:8172';
     const url = `${backend_url}/${endpoint}`;
-    
+
     console.log(`Attempting to connect to backend at: ${url}`);
-    
+    console.log(payload)
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -42,12 +42,12 @@ export async function callBackendService({ endpoint, payload, timeout = 60000, h
     return NextResponse.json(data);
   } catch (error) {
     console.error(`Error in ${endpoint} API route:`, error);
-    
+
     // Check if it's a timeout error
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const isTimeout = errorMessage.includes('timeout') || 
+    const isTimeout = errorMessage.includes('timeout') ||
       (error instanceof Error && 'code' in error && (error as { code: number }).code === 23);
-      
+
     if (isTimeout) {
       return NextResponse.json(
         {
@@ -57,7 +57,7 @@ export async function callBackendService({ endpoint, payload, timeout = 60000, h
         { status: 503 } // Service Unavailable
       );
     }
-    
+
     return NextResponse.json(
       {
         status_code: -1,

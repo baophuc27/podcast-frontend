@@ -1629,7 +1629,7 @@ const PODCAST_STYLES = [
         podcastType: 'Alternating Briefing',
         duration: 'Short',
         maxRevisions: 2,
-        guidelines: 'Luân phiên giữa các người dẫn cho các tin tức theo cách ngắn gọn khách quan'
+        guidelines: ''
     },
     {
         id: 'casual-balanced',
@@ -1638,7 +1638,7 @@ const PODCAST_STYLES = [
         podcastType: 'Discussion',
         duration: 'Medium',
         maxRevisions: 3,
-        guidelines: 'Đối thoại tự nhiên, đặt câu hỏi để mở rộng và đào sâu cuộc trò chuyện'
+        guidelines: ''
     },
     {
         id: 'quick-brief',
@@ -1647,7 +1647,7 @@ const PODCAST_STYLES = [
         podcastType: 'Solo Briefing',
         duration: 'Very Short',
         maxRevisions: 1,
-        guidelines: 'Tập trung vào thông tin chính yếu, sử dụng ngôn ngữ đơn giản, rõ ràng'
+        guidelines: ''
     },
     {
         id: 'custom',
@@ -1698,6 +1698,47 @@ function PodcastStyleSelector({ onStyleChange }) {
         duration: customDuration,
         maxRevisions: customMaxRevisions
     };
+    // Function to get the display name based on current settings
+    const getDisplayStyleName = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "PodcastStyleSelector.useCallback[getDisplayStyleName]": ()=>{
+            // Find a matching predefined style based on current settings
+            const matchingStyle = PODCAST_STYLES.find({
+                "PodcastStyleSelector.useCallback[getDisplayStyleName].matchingStyle": (style)=>style.id !== 'custom' && style.guidelines === customGuidelines && style.podcastType === customPodcastType && style.duration === customDuration && style.maxRevisions === customMaxRevisions
+            }["PodcastStyleSelector.useCallback[getDisplayStyleName].matchingStyle"]);
+            // Return the matching style name or "Custom Style" if no match
+            return matchingStyle ? matchingStyle.name : "Custom Style";
+        }
+    }["PodcastStyleSelector.useCallback[getDisplayStyleName]"], [
+        customGuidelines,
+        customPodcastType,
+        customDuration,
+        customMaxRevisions
+    ]);
+    // Function to check if current settings match a predefined style
+    const checkIfCustomStyle = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "PodcastStyleSelector.useCallback[checkIfCustomStyle]": ()=>{
+            const matchingStyle = PODCAST_STYLES.find({
+                "PodcastStyleSelector.useCallback[checkIfCustomStyle].matchingStyle": (style)=>style.id !== 'custom' && style.guidelines === customGuidelines && style.podcastType === customPodcastType && style.duration === customDuration && style.maxRevisions === customMaxRevisions
+            }["PodcastStyleSelector.useCallback[checkIfCustomStyle].matchingStyle"]);
+            // If no matching style found, switch to custom
+            if (!matchingStyle) {
+                if (selectedStyleId !== 'custom') {
+                    setSelectedStyleId('custom');
+                }
+            } else {
+                // If there's a matching style, update the selectedStyleId to match
+                if (selectedStyleId !== matchingStyle.id) {
+                    setSelectedStyleId(matchingStyle.id);
+                }
+            }
+        }
+    }["PodcastStyleSelector.useCallback[checkIfCustomStyle]"], [
+        customGuidelines,
+        customPodcastType,
+        customDuration,
+        customMaxRevisions,
+        selectedStyleId
+    ]);
     const handleStyleSelect = (styleId)=>{
         setSelectedStyleId(styleId);
         const style = PODCAST_STYLES.find((s)=>s.id === styleId);
@@ -1725,6 +1766,8 @@ function PodcastStyleSelector({ onStyleChange }) {
             guidelines: e.target.value,
             maxRevisions: customMaxRevisions
         });
+        // Check if we need to switch to custom style
+        setTimeout(()=>checkIfCustomStyle(), 0);
     };
     const handleCustomPodcastTypeChange = (e)=>{
         setCustomPodcastType(e.target.value);
@@ -1734,6 +1777,8 @@ function PodcastStyleSelector({ onStyleChange }) {
             guidelines: customGuidelines,
             maxRevisions: customMaxRevisions
         });
+        // Check if we need to switch to custom style
+        setTimeout(()=>checkIfCustomStyle(), 0);
     };
     const handleCustomDurationChange = (e)=>{
         setCustomDuration(e.target.value);
@@ -1743,6 +1788,8 @@ function PodcastStyleSelector({ onStyleChange }) {
             guidelines: customGuidelines,
             maxRevisions: customMaxRevisions
         });
+        // Check if we need to switch to custom style
+        setTimeout(()=>checkIfCustomStyle(), 0);
     };
     const handleMaxRevisionsChange = (e)=>{
         const revisions = parseInt(e.target.value);
@@ -1753,6 +1800,8 @@ function PodcastStyleSelector({ onStyleChange }) {
             guidelines: customGuidelines,
             maxRevisions: revisions
         });
+        // Check if we need to switch to custom style
+        setTimeout(()=>checkIfCustomStyle(), 0);
     };
     // Helper to get quality level text from max revisions
     const getQualityLevel = (revisions)=>{
@@ -1773,7 +1822,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                 children: "Podcast Style"
             }, void 0, false, {
                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                lineNumber: 168,
+                lineNumber: 218,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1805,53 +1854,53 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                     d: "M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 178,
+                                                    lineNumber: 228,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 177,
+                                                lineNumber: 227,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                            lineNumber: 176,
+                                            lineNumber: 226,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "font-medium text-gray-900 dark:text-gray-100",
-                                                    children: selectedStyle.name
+                                                    children: getDisplayStyleName()
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 182,
+                                                    lineNumber: 232,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "text-sm text-gray-500 dark:text-gray-400",
                                                     children: [
-                                                        selectedStyle.podcastType,
+                                                        customPodcastType,
                                                         " • ",
-                                                        selectedStyle.duration,
+                                                        customDuration,
                                                         " • ",
-                                                        getQualityLevel(currentStyle.maxRevisions)
+                                                        getQualityLevel(customMaxRevisions)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 183,
+                                                    lineNumber: 233,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                            lineNumber: 181,
+                                            lineNumber: 231,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                    lineNumber: 175,
+                                    lineNumber: 225,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
@@ -1864,23 +1913,23 @@ function PodcastStyleSelector({ onStyleChange }) {
                                         clipRule: "evenodd"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 189,
+                                        lineNumber: 239,
                                         columnNumber: 15
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                    lineNumber: 188,
+                                    lineNumber: 238,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                            lineNumber: 174,
+                            lineNumber: 224,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                        lineNumber: 170,
+                        lineNumber: 220,
                         columnNumber: 9
                     }, this),
                     isStyleMenuOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1898,7 +1947,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                     children: style.name
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 205,
+                                                    lineNumber: 255,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1906,7 +1955,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                     children: style.description
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 206,
+                                                    lineNumber: 256,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1917,7 +1966,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                             children: style.duration
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                            lineNumber: 208,
+                                                            lineNumber: 258,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1925,7 +1974,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                             children: style.podcastType
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                            lineNumber: 211,
+                                                            lineNumber: 261,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1933,19 +1982,19 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                             children: getQualityLevel(style.maxRevisions)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                            lineNumber: 214,
+                                                            lineNumber: 264,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                    lineNumber: 207,
+                                                    lineNumber: 257,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                            lineNumber: 204,
+                                            lineNumber: 254,
                                             columnNumber: 19
                                         }, this),
                                         selectedStyleId === style.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
@@ -1961,28 +2010,28 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                 d: "M5 13l4 4L19 7"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 221,
+                                                lineNumber: 271,
                                                 columnNumber: 23
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                            lineNumber: 220,
+                                            lineNumber: 270,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                    lineNumber: 203,
+                                    lineNumber: 253,
                                     columnNumber: 17
                                 }, this)
                             }, style.id, false, {
                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                lineNumber: 198,
+                                lineNumber: 248,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                        lineNumber: 196,
+                        lineNumber: 246,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1998,7 +2047,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                 children: "Format"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 235,
+                                                lineNumber: 285,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2011,7 +2060,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Solo Briefing"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 241,
+                                                        lineNumber: 291,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2019,7 +2068,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Alternating Briefing"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 242,
+                                                        lineNumber: 292,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2027,19 +2076,19 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Discussion"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 243,
+                                                        lineNumber: 293,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 236,
+                                                lineNumber: 286,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 234,
+                                        lineNumber: 284,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2049,7 +2098,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                 children: "Duration"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 248,
+                                                lineNumber: 298,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2062,7 +2111,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Very Short (1-2 min)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 254,
+                                                        lineNumber: 304,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2070,7 +2119,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Short (3-5 min)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 255,
+                                                        lineNumber: 305,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2078,7 +2127,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Medium (6-8 min)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 256,
+                                                        lineNumber: 306,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2086,19 +2135,19 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Long (9-12 min)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 257,
+                                                        lineNumber: 307,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 249,
+                                                lineNumber: 299,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 247,
+                                        lineNumber: 297,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2108,7 +2157,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                 children: "Quality"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 262,
+                                                lineNumber: 312,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2121,7 +2170,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Fast (minimal revisions)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 268,
+                                                        lineNumber: 318,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2129,7 +2178,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "Balanced (moderate revisions)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 269,
+                                                        lineNumber: 319,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2137,25 +2186,25 @@ function PodcastStyleSelector({ onStyleChange }) {
                                                         children: "High Quality (thorough revisions)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                        lineNumber: 270,
+                                                        lineNumber: 320,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                                lineNumber: 263,
+                                                lineNumber: 313,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 261,
+                                        lineNumber: 311,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                lineNumber: 233,
+                                lineNumber: 283,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2165,7 +2214,7 @@ function PodcastStyleSelector({ onStyleChange }) {
                                         children: "Guidelines (Optional)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 277,
+                                        lineNumber: 327,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -2176,35 +2225,35 @@ function PodcastStyleSelector({ onStyleChange }) {
                                         onChange: handleCustomGuidelinesChange
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                        lineNumber: 278,
+                                        lineNumber: 328,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                                lineNumber: 276,
+                                lineNumber: 326,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                        lineNumber: 231,
+                        lineNumber: 281,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-                lineNumber: 169,
+                lineNumber: 219,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/podcast/PodcastStyleSelector.tsx",
-        lineNumber: 167,
+        lineNumber: 217,
         columnNumber: 5
     }, this);
 }
-_s(PodcastStyleSelector, "1+fogmUH2oekA6oj1g2CPYlsFyw=");
+_s(PodcastStyleSelector, "a65aG2Xl3ehBjxLZNviJwVfan8E=");
 _c = PodcastStyleSelector;
 var _c;
 __turbopack_context__.k.register(_c, "PodcastStyleSelector");
@@ -4992,7 +5041,7 @@ function PodcastGenerator() {
     const getDurationInMinutes = (durationString)=>{
         switch(durationString){
             case 'Very Short':
-                return 1.5; // 1-2 minutes
+                return 2; // 1-2 minutes
             case 'Short':
                 return 4; // 3-5 minutes
             case 'Medium':
