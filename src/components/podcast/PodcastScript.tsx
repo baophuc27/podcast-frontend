@@ -14,6 +14,7 @@ interface PodcastScriptProps {
   onUpdate: (index: number, newContent: string) => void;
   onGenerateFinal: () => void;
   loading: boolean;
+  audioGenerating?: boolean; // Add this prop for audio generation status
 }
 
 export default function PodcastScript({
@@ -22,7 +23,8 @@ export default function PodcastScript({
   podcastDir = '',
   onUpdate,
   onGenerateFinal,
-  loading
+  loading,
+  audioGenerating = false // Default to false if not provided
 }: PodcastScriptProps) {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [updatedAudioFiles, setUpdatedAudioFiles] = useState<{ [key: string]: string[] }>({});
@@ -94,7 +96,7 @@ export default function PodcastScript({
   };
 
   // Check if a final generation button should be enabled
-  const isGenerateFinalEnabled = directoryStatus === 'valid' && !loading && !regeneratingIndex;
+  const isGenerateFinalEnabled = directoryStatus === 'valid' && !loading && !regeneratingIndex && !audioGenerating;
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-100 dark:border-gray-700 p-6 transition-all animate-fade-in">
@@ -119,6 +121,23 @@ export default function PodcastScript({
         </div>
       </div>
       
+      {/* Add audio generation banner when generating audio */}
+      {audioGenerating && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center">
+          <div className="flex-shrink-0 mr-3">
+            <svg className="animate-spin h-5 w-5 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              Generating audio files in the background. You can edit the script while waiting.
+            </p>
+          </div>
+        </div>
+      )}
+      
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4 text-red-700 dark:text-red-300 text-sm">
           {error}
@@ -135,7 +154,8 @@ export default function PodcastScript({
             onUpdate={onUpdate}
             onRegenerateAudio={() => handleRegenerateAudio(idx)}
             isRegenerating={regeneratingIndex === idx}
-            disableRegeneration={directoryStatus !== 'valid'}
+            disableRegeneration={directoryStatus !== 'valid' || audioGenerating}
+            audioGenerating={audioGenerating}
           />
         ))}
       </div>
@@ -152,7 +172,13 @@ export default function PodcastScript({
           }}
           disabled={!isGenerateFinalEnabled}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md w-full max-w-md"
-          title={directoryStatus !== 'valid' ? "Podcast directory not available" : ""}
+          title={
+            audioGenerating 
+              ? "Please wait for audio generation to complete" 
+              : directoryStatus !== 'valid' 
+                ? "Podcast directory not available" 
+                : ""
+          }
         >
           {loading ? (
             <>
@@ -161,6 +187,14 @@ export default function PodcastScript({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               Generating Final Podcast...
+            </>
+          ) : audioGenerating ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Waiting for audio generation...
             </>
           ) : (
             <>
