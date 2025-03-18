@@ -20,7 +20,6 @@ export async function callBackendService({ endpoint, payload, timeout = 60000, h
     const url = `${backend_url}/${endpoint}`;
 
     console.log(`Attempting to connect to backend at: ${url}`);
-    console.log(payload)
     const response = await fetch(url, {
       method: 'POST',
       headers: {

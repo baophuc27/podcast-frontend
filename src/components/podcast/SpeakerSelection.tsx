@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SPEAKER_PROFILES } from '@/lib/constants/speakers';
 
 // Import the modal component instead of SpeedControl
@@ -13,19 +13,21 @@ const getAgeDescription = (age: number): string => {
   return 'Mature';
 };
 
-// Updated interface with speed-related props
+// Updated interface with format-related props
 interface SpeakerSelectionProps {
   selectedSpeakers: number[];
-  speakerSpeeds: { [speakerId: number]: number }; // Added this prop
+  speakerSpeeds: { [speakerId: number]: number };
   onChange: (selectedIds: number[]) => void;
-  onSpeedChange: (speakerId: number, speed: number) => void; // Added this prop
+  onSpeedChange: (speakerId: number, speed: number) => void;
+  podcastType?: string; // Add this prop to know the format
 }
 
 export default function SpeakerSelection({ 
   selectedSpeakers, 
-  speakerSpeeds, // Added this prop
+  speakerSpeeds,
   onChange,
-  onSpeedChange // Added this prop
+  onSpeedChange,
+  podcastType = 'Discussion' // Default to Discussion if not provided
 }: SpeakerSelectionProps) {
   const [hostMenuOpen, setHostMenuOpen] = useState(false);
   const [guestMenuOpen, setGuestMenuOpen] = useState(false);
@@ -38,6 +40,18 @@ export default function SpeakerSelection({
   const selectedSpeakerProfiles = SPEAKER_PROFILES.filter(
     speaker => selectedSpeakers.includes(speaker.id)
   );
+
+  // Check if we're in Solo Briefing mode
+  const isSoloBriefing = podcastType === 'Solo Briefing';
+
+  // Effect to remove guest speaker when switching to Solo Briefing
+  useEffect(() => {
+    if (isSoloBriefing && selectedSpeakers.length > 1 && selectedSpeakers[1] !== undefined) {
+      // Remove the guest speaker when switching to Solo Briefing
+      const newSelection = [selectedSpeakers[0]];
+      onChange(newSelection);
+    }
+  }, [isSoloBriefing, selectedSpeakers, onChange]);
 
   const selectHost = (speakerId: number) => {
     const newSelection = [...selectedSpeakers];
@@ -53,6 +67,8 @@ export default function SpeakerSelection({
   };
 
   const selectGuest = (speakerId: number) => {
+    if (isSoloBriefing) return; // Don't allow guest selection in Solo Briefing mode
+    
     const newSelection = [...selectedSpeakers];
     newSelection[1] = speakerId;
     onChange(newSelection);
@@ -228,17 +244,23 @@ export default function SpeakerSelection({
           {hostSpeaker && (
             <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between px-1">
               <span>Voice speed: <span className="font-medium">{(speakerSpeeds[hostSpeaker.id] || 1.0).toFixed(1)}x</span></span>
-
             </div>
           )}
         </div>
         
-        {/* Guest Voice Selection */}
-        <div className="relative">
-          <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Guest Voice</label>
+        {/* Guest Voice Selection - Conditionally disabled for Solo Briefing */}
+        <div className={`relative ${isSoloBriefing ? 'opacity-50' : ''}`}>
+          <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center justify-between">
+            <span>Guest Voice</span>
+            {isSoloBriefing && (
+              <span className="text-xs text-gray-500 italic">Disabled in Solo Briefing mode</span>
+            )}
+          </label>
           <div 
-            className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 p-3 flex items-center justify-between cursor-pointer"
-            onClick={() => setGuestMenuOpen(!guestMenuOpen)}
+            className={`border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 p-3 flex items-center justify-between ${
+              isSoloBriefing ? 'cursor-not-allowed' : 'cursor-pointer'
+            }`}
+            onClick={() => !isSoloBriefing && setGuestMenuOpen(!guestMenuOpen)}
           >
             {guestSpeaker ? (
               <div className="flex items-center">
@@ -266,8 +288,9 @@ export default function SpeakerSelection({
                     </span>
                     <button 
                       className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 transition-colors"
-                      onClick={(e) => playAudio(guestSpeaker.id, e)}
+                      onClick={(e) => !isSoloBriefing && playAudio(guestSpeaker.id, e)}
                       type="button"
+                      disabled={isSoloBriefing}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -278,7 +301,7 @@ export default function SpeakerSelection({
                 </div>
               </div>
             ) : (
-              <span className="text-gray-500">Select guest voice</span>
+              <span className="text-gray-500">{isSoloBriefing ? 'Not available' : 'Select guest voice'}</span>
             )}
             <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"></path>
@@ -286,7 +309,7 @@ export default function SpeakerSelection({
           </div>
           
           {/* Guest Dropdown */}
-          {guestMenuOpen && (
+          {!isSoloBriefing && guestMenuOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
               {SPEAKER_PROFILES.map(speaker => {
                 const styleTags = getStyleTags(speaker.mc_guidelines);
@@ -357,7 +380,7 @@ export default function SpeakerSelection({
           )}
           
           {/* Display current speed value instead of full speed control */}
-          {guestSpeaker && (
+          {!isSoloBriefing && guestSpeaker && (
             <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between px-1">
               <span>Voice speed: <span className="font-medium">{(speakerSpeeds[guestSpeaker.id] || 1.0).toFixed(1)}x</span></span>
             </div>

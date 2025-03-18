@@ -143,11 +143,13 @@ export default function PodcastForm({
       {/* Unified Style Selector */}
       <PodcastStyleSelector onStyleChange={handleStyleChange} />
       
+      {/* Pass podcastType to SpeakerSelection component */}
       <SpeakerSelection 
         selectedSpeakers={selectedSpeakers}
         speakerSpeeds={speakerSpeeds}
         onChange={setSelectedSpeakers}
         onSpeedChange={handleSpeedChange}
+        podcastType={podcastType}
       />
       
       <div className="flex justify-center mt-8">
