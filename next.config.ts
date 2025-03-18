@@ -2,10 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  poweredByHeader: true,
+  compress: true,
+  
+  // Existing redirect code
   redirects: async () => {
     return [
       {
-        // Simple redirect from root to podcast when authenticated
         source: '/',
         destination: '/podcast',
         permanent: false,
@@ -18,6 +21,20 @@ const nextConfig: NextConfig = {
         ]
       },
     ];
+  },
+  
+  // Add this if you're using API routes
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Forwarded-Host', value: 'preserve' },
+          { key: 'X-Forwarded-For', value: 'preserve' },
+          { key: 'X-Real-IP', value: 'preserve' },
+        ],
+      },
+    ]
   },
 };
 

@@ -16,7 +16,7 @@ type BackendRequestOptions = {
 export async function callBackendService({ endpoint, payload, timeout = 60000, host }: BackendRequestOptions): Promise<NextResponse> {
   try {
     // Use the provided host or default to the main backend
-    const backend_url = host || 'http://localhost:8172';
+    const backend_url = host || 'http://10.30.78.37:8172';
     const url = `${backend_url}/${endpoint}`;
     
     console.log(`Attempting to connect to backend at: ${url}`);
