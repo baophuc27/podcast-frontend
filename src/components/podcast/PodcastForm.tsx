@@ -138,7 +138,6 @@ export default function PodcastForm({
             onChange={(e) => setUrls(e.target.value)}
           />
         </div>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Add URLs to articles you want to convert into podcast content</p>
       </div>
       
       {/* Unified Style Selector */}
