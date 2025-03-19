@@ -2,10 +2,9 @@
 
 interface ErrorAlertProps {
   message: string;
-  onDemoMode?: () => void;
 }
 
-export default function ErrorAlert({ message, onDemoMode }: ErrorAlertProps) {
+export default function ErrorAlert({ message }: ErrorAlertProps) {
   return (
     <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-sm">
       <div className="flex">
@@ -19,20 +18,6 @@ export default function ErrorAlert({ message, onDemoMode }: ErrorAlertProps) {
           <div className="mt-2 text-sm text-red-700 dark:text-red-300">
             <p>{message}</p>
           </div>
-          {onDemoMode && (
-            <div className="mt-4">
-              <button
-                onClick={onDemoMode}
-                type="button"
-                className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors dark:bg-red-700 dark:hover:bg-red-600"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Try Demo Mode (No backend required)
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

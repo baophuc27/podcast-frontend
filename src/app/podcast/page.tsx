@@ -219,89 +219,11 @@ export default function PodcastGenerator() {
     }
   };
 
-  // Function to handle demo mode if needed
-  const activateDemoMode = () => {
-    // Create a simulated response with sample data
-    const demoData: PodcastData[] = [
-      {
-        speaker: "MC1",
-        content: "Welcome to our podcast! Today we're discussing the fascinating world of AI and how it's transforming content creation.",
-        speakerProfile: {
-          id: 0,
-          name: "Mai Lan",
-          gender: "Female",
-          age: 20,
-          mc_guidelines: "+ Explanatory \n+ Comparative\n+ Reflective",
-          speed: 1.0
-        }
-      },
-      {
-        speaker: "MC2",
-        content: "That's right! We've seen incredible advances in machine learning that are making it possible to generate professional-sounding podcasts automatically.",
-        speakerProfile: {
-          id: 1,
-          name: "Minh Tú",
-          gender: "Male",
-          age: 30,
-          mc_guidelines: "+ Formal \n+ Informative \n+ Descriptive \n+ Objective",
-          speed: 1.0
-        }
-      },
-      {
-        speaker: "MC1",
-        content: "Exactly. What's most impressive is how natural the conversations can sound, with proper intonation and emphasis.",
-        speakerProfile: {
-          id: 0,
-          name: "Mai Lan",
-          gender: "Female",
-          age: 20,
-          mc_guidelines: "+ Explanatory \n+ Comparative\n+ Reflective",
-          speed: 1.0
-        }
-      }
-    ];
-
-    // Create simulated audio files that match your API's format
-    // For each utterance, we'll have a single audio file
-    const demoIndividualFiles = {
-      "MC1_0": ["/demo/mc1_0_0.wav"],
-      "MC2_1": ["/demo/mc2_1_0.wav"],
-      "MC1_2": ["/demo/mc1_2_0.wav"]
-    };
-
-    // Now convert to the expected format for our components
-    const demoAudioFiles = {
-      "utterance_0": demoIndividualFiles["MC1_0"],
-      "utterance_1": demoIndividualFiles["MC2_1"],
-      "utterance_2": demoIndividualFiles["MC1_2"]
-    };
-
-    // Important: Set the podcast directory for demo mode
-    const demoPodcastDir = "demo_podcast_dir";
-    setPodcastDir(demoPodcastDir);
-    console.log("Setting demo podcast directory:", demoPodcastDir);
-
-    setApiResponse({
-      status_code: 0,
-      data: demoData,
-      individual_files: demoIndividualFiles,
-      audio_files: demoAudioFiles,
-      podcast_dir: demoPodcastDir
-    });
-
-    setEditedPodcastData(demoData);
-    setScriptReady(true);
-    setError(null);
-  };
-
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 pt-12">
 
       {error && (
-        <ErrorAlert
-          message={error}
-          onDemoMode={activateDemoMode}
-        />
+        <ErrorAlert message={error} />
       )}
 
       <PodcastForm

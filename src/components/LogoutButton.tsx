@@ -18,10 +18,6 @@ export default function LogoutButton() {
       });
 
       if (response.ok) {
-        // Clear client-side authentication state
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('username');
-        
         // Redirect to login page
         router.push('/');
       } else {

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Define the users file path
-const USERS_FILE_PATH = path.join(process.cwd(), 'auth', 'users.txt');
+// Define the tokens file path
+const TOKENS_FILE_PATH = path.join(process.cwd(), 'auth', 'tokens.txt');
 
-// Function to read users from text file
-function readUsers(): Map<string, string> {
-  const users = new Map<string, string>();
+// Function to read tokens from text file
+function readTokens(): string[] {
+  const tokens = new Set<string>();
   
   try {
     // Ensure the auth directory exists
@@ -16,33 +16,29 @@ function readUsers(): Map<string, string> {
       fs.mkdirSync(authDir, { recursive: true });
     }
     
-    // Create file with default admin user if it doesn't exist
-    if (!fs.existsSync(USERS_FILE_PATH)) {
-      fs.writeFileSync(USERS_FILE_PATH, 'admin:password\n');
+    // Create file with default token if it doesn't exist
+    if (!fs.existsSync(TOKENS_FILE_PATH)) {
+      fs.writeFileSync(TOKENS_FILE_PATH, 'admin-token-123\n');
     }
     
     // Read the file content
-    const fileContent = fs.readFileSync(USERS_FILE_PATH, 'utf-8');
+    const fileContent = fs.readFileSync(TOKENS_FILE_PATH, 'utf-8');
     
-    // Parse each line as username:password
+    // Parse each line as a token
     const lines = fileContent.split('\n');
     for (const line of lines) {
       if (line.trim() === '') continue;
-      
-      const [username, password] = line.split(':');
-      if (username && password) {
-        users.set(username.trim(), password.trim());
-      }
+      tokens.add(line.trim());
     }
   } catch (error) {
-    console.error('Error reading users file:', error);
+    console.error('Error reading tokens file:', error);
   }
   
-  return users;
+  return Array.from(tokens);
 }
 
-// Function to write users to text file
-function writeUsers(users: Map<string, string>): boolean {
+// Function to write tokens to text file
+function writeTokens(tokens: string[]): boolean {
   try {
     // Ensure the auth directory exists
     const authDir = path.join(process.cwd(), 'auth');
@@ -50,22 +46,19 @@ function writeUsers(users: Map<string, string>): boolean {
       fs.mkdirSync(authDir, { recursive: true });
     }
     
-    // Convert users map to string format
-    let fileContent = '';
-    for (const [username, password] of users.entries()) {
-      fileContent += `${username}:${password}\n`;
-    }
+    // Convert tokens array to string format
+    const fileContent = tokens.join('\n') + '\n';
     
     // Write to file
-    fs.writeFileSync(USERS_FILE_PATH, fileContent);
+    fs.writeFileSync(TOKENS_FILE_PATH, fileContent);
     return true;
   } catch (error) {
-    console.error('Error writing users file:', error);
+    console.error('Error writing tokens file:', error);
     return false;
   }
 }
 
-// GET endpoint to retrieve all users (without passwords)
+// GET endpoint to retrieve all tokens (admin only)
 export async function GET(request: NextRequest) {
   try {
     // Check for admin authorization (could be enhanced)
@@ -77,13 +70,12 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Read users
-    const users = readUsers();
-    const userList = Array.from(users.keys()).map(username => ({ username }));
+    // Read tokens
+    const tokens = readTokens();
     
-    return NextResponse.json({ users: userList });
+    return NextResponse.json({ tokens });
   } catch (error) {
-    console.error('Error getting users:', error);
+    console.error('Error getting tokens:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -91,47 +83,47 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST endpoint to add a new user
+// POST endpoint to add a new token
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { token } = body;
     
-    if (!username || !password) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'Username and password are required' },
+        { error: 'Token is required' },
         { status: 400 }
       );
     }
     
-    // Read existing users
-    const users = readUsers();
+    // Read existing tokens
+    const tokens = readTokens();
     
-    // Check if user already exists
-    if (users.has(username)) {
+    // Check if token already exists
+    if (tokens.includes(token)) {
       return NextResponse.json(
-        { error: 'Username already exists' },
+        { error: 'Token already exists' },
         { status: 409 }
       );
     }
     
-    // Add new user
-    users.set(username, password);
+    // Add new token
+    tokens.push(token);
     
-    // Save updated users
-    if (writeUsers(users)) {
+    // Save updated tokens
+    if (writeTokens(tokens)) {
       return NextResponse.json({
         success: true,
-        message: 'User created successfully'
+        message: 'Token created successfully'
       });
     } else {
       return NextResponse.json(
-        { error: 'Failed to create user' },
+        { error: 'Failed to create token' },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error creating token:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -139,55 +131,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE endpoint to remove a user
+// DELETE endpoint to remove a token
 export async function DELETE(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const username = url.searchParams.get('username');
+    const tokenToDelete = url.searchParams.get('token');
     
-    if (!username) {
+    if (!tokenToDelete) {
       return NextResponse.json(
-        { error: 'Username is required' },
+        { error: 'Token is required' },
         { status: 400 }
       );
     }
     
-    // Read existing users
-    const users = readUsers();
+    // Read existing tokens
+    const tokens = readTokens();
     
-    // Check if user exists
-    if (!users.has(username)) {
+    // Check if token exists
+    if (!tokens.includes(tokenToDelete)) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Token not found' },
         { status: 404 }
       );
     }
     
-    // Don't allow deleting the last admin account
-    if (username === 'admin' && users.size === 1) {
+    // Don't allow deleting the last token
+    if (tokens.length === 1) {
       return NextResponse.json(
-        { error: 'Cannot delete the only admin account' },
+        { error: 'Cannot delete the only token' },
         { status: 403 }
       );
     }
     
-    // Remove user
-    users.delete(username);
+    // Remove token
+    const updatedTokens = tokens.filter(t => t !== tokenToDelete);
     
-    // Save updated users
-    if (writeUsers(users)) {
+    // Save updated tokens
+    if (writeTokens(updatedTokens)) {
       return NextResponse.json({
         success: true,
-        message: 'User deleted successfully'
+        message: 'Token deleted successfully'
       });
     } else {
       return NextResponse.json(
-        { error: 'Failed to delete user' },
+        { error: 'Failed to delete token' },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error deleting token:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
