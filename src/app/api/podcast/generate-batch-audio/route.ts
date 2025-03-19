@@ -145,7 +145,7 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
   }
 }
 
-// Process a single utterance - Updated to use speaker profile's speed
+// Function to process a single utterance - No longer splits utterances
 async function processUtterance(podcastData: PodcastData[], idx: number, podcastDir: string): Promise<string[]> {
   if (!podcastData || idx >= podcastData.length) {
     return [];
@@ -176,31 +176,22 @@ async function processUtterance(podcastData: PodcastData[], idx: number, podcast
     }
   }
   
-  // Split long content into manageable chunks
-  const chunks = splitLongUtterance(content);
-  const chunkAudioFiles: string[] = [];
+  // No longer splitting content into chunks - process the entire content at once
+  const outputFile = path.join(
+    podcastDir, 
+    `${speaker.toLowerCase().replace(' ', '_')}_${idx}_${Date.now()}.wav`
+  );
   
-  // Process each chunk
-  for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-    const chunk = chunks[chunkIdx];
-    
-    // Use a unique filename to avoid overwriting existing files
-    const outputFile = path.join(
-      podcastDir, 
-      `${speaker.toLowerCase().replace(' ', '_')}_${idx}_${chunkIdx}_${Date.now()}.wav`
-    );
-    
-    // Process TTS for this chunk with speed parameter
-    const [success, error] = await processTTS(chunk, ttsSpeakerId, outputFile, speed);
-    
-    if (success) {
-      chunkAudioFiles.push(outputFile);
-    } else {
-      console.error(`Failed to process chunk ${chunkIdx}: ${error}`);
-    }
+  // Process TTS for the full utterance with speed parameter
+  console.log(`Processing full utterance for speaker ${speaker} at index ${idx}`);
+  const [success, error] = await processTTS(content, ttsSpeakerId, outputFile, speed);
+  
+  if (success) {
+    return [outputFile];
+  } else {
+    console.error(`Failed to process utterance ${idx}: ${error}`);
+    return [];
   }
-  
-  return chunkAudioFiles;
 }
 
 export async function POST(request: NextRequest) {

@@ -11,7 +11,7 @@ type RegenerateUtterancePayload = {
   podcast_dir: string;
 };
 
-// Function to process text using TTS API - No longer splits utterances
+// Function to process text using TTS API - Uses the entire utterance without splitting
 async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null]> {
   const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
   

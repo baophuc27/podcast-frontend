@@ -146,13 +146,18 @@ export async function generateFullPodcastAudio(
     const data = await response.json();
     console.log("Full podcast audio response:", data);
     
-    if (data.status_code === 0) {
-      // The Python function returns the URL in the data field
+    // Handle the updated response format
+    // The response now has format: {"error":0,"message":"Success","data":"https://stc-ki-ki.zdn.vn/podcast/..."}
+    if (data.error === 0 || data.status_code === 0) {
+      // Check if the data field is a string (directly containing the URL)
+      if (typeof data.data === 'string' && data.data.startsWith('http')) {
+        return { success: true, audioUrl: data.data };
+      } 
       return { success: true, audioUrl: data.data };
     } else {
       return { 
         success: false, 
-        error: data.error || 'Failed to generate full podcast audio' 
+        error: data.message || data.error || 'Failed to generate full podcast audio' 
       };
     }
   } catch (error) {

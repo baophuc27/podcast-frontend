@@ -16,7 +16,7 @@ type BackendRequestOptions = {
 export async function callBackendService({ 
   endpoint, 
   payload, 
-  timeout = 60000, 
+  timeout = 180000, 
   host,
   useProxy = true // Default to true to maintain backward compatibility
 }: BackendRequestOptions): Promise<NextResponse> {

@@ -11,6 +11,7 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const previousUrlRef = useRef(audioUrl);
 
@@ -36,18 +37,27 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
 
     const handleCanPlay = () => {
       setLoading(false);
+      setError(null);
+    };
+    
+    const handleError = () => {
+      console.error("Error loading audio:", audioUrl);
+      setError("Unable to load audio. The file may be unavailable or in an unsupported format.");
+      setLoading(false);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('error', handleError);
     };
   }, []); // Empty dependency array - only run once
 
@@ -57,7 +67,17 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
       setLoading(true);
       setIsPlaying(false);
       setCurrentTime(0);
+      setError(null);
       previousUrlRef.current = audioUrl;
+      
+      console.log("Audio URL updated:", audioUrl);
+      
+      // Validate the URL
+      if (audioUrl && !audioUrl.startsWith('http') && !audioUrl.startsWith('/')) {
+        console.warn("Invalid audio URL format:", audioUrl);
+        setError("Invalid audio URL format");
+        setLoading(false);
+      }
     }
   }, [audioUrl]);
 
@@ -136,14 +156,27 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
       </div>
       
       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 p-3 mb-4 rounded-md border border-red-200 dark:border-red-800">
+            <div className="flex">
+              <svg className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <audio ref={audioRef} src={audioUrl} className="hidden" />
         
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={togglePlayPause}
-            disabled={!audioUrl || loading}
+            disabled={!audioUrl || loading || !!error}
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              !audioUrl || loading
+              !audioUrl || loading || !!error
                 ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
             } text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
@@ -176,14 +209,14 @@ export default function PodcastFinal({ audioUrl }: PodcastFinalProps) {
               max={duration || 0}
               value={currentTime}
               onChange={handleProgressChange}
-              disabled={!audioUrl || duration === 0 || loading}
+              disabled={!audioUrl || duration === 0 || loading || !!error}
               className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                !audioUrl || duration === 0 || loading
+                !audioUrl || duration === 0 || loading || !!error
                   ? 'bg-gray-200 dark:bg-gray-700 opacity-50'
                   : 'bg-gray-200 dark:bg-gray-700'
               }`}
               style={{
-                background: audioUrl && duration > 0 && !loading
+                background: audioUrl && duration > 0 && !loading && !error
                   ? `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${(currentTime / duration) * 100}%, #E5E7EB ${(currentTime / duration) * 100}%, #E5E7EB 100%)`
                   : undefined
               }}

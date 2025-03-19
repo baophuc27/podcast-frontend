@@ -76,13 +76,17 @@ export async function POST(request: NextRequest) {
     
     // For full podcast generation, we call the dedicated gen-audio service
     // directly on the specific host
-    return callBackendService({
+    const backendResponse = await callBackendService({
       endpoint: 'gen-audio',  // This endpoint matches your Python code
       payload: payload,
       timeout: 120000, // 2 minute timeout for full audio generation
       host: 'http://10.30.78.48:8282', // Explicitly using the full podcast gen host
       useProxy: true // Add this flag to explicitly enable proxy support
     });
+    
+    // Return the response directly to maintain the correct structure
+    // The response has format: {"error":0,"message":"Success","data":"https://stc-ki-ki.zdn.vn/podcast/..."}
+    return backendResponse;
     
   } catch (error) {
     console.error('Error in generate full podcast API route:', error);
