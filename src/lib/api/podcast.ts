@@ -44,7 +44,10 @@ export async function regenerateUtterance(
   podcastData: PodcastData[], 
   idx: number, 
   podcastDir: string
-): Promise<string[]> {
+): Promise<{ 
+  audioFiles: string[], 
+  cdnUrl?: string 
+}> {
   try {
     console.log(`Regenerating utterance ${idx} in directory ${podcastDir}`);
     
@@ -86,16 +89,20 @@ export async function regenerateUtterance(
         return formattedPath;
       });
       
-      return formattedPaths;
+      return { 
+        audioFiles: formattedPaths,
+        cdnUrl: data.cdn_url // Return the CDN URL if available
+      };
     } else {
       console.error("Unexpected response format:", data);
-      return [];
+      return { audioFiles: [] };
     }
   } catch (error) {
     console.error('Error regenerating utterance audio:', error);
-    return [];
+    return { audioFiles: [] };
   }
 }
+
 
 /**
  * Generate the final podcast audio
@@ -169,7 +176,6 @@ export async function generateFullPodcastAudio(
   }
 }
 
-// Add this function to src/lib/api/podcast.ts
 export async function generateBatchAudio(
   podcastData: PodcastData[],
   podcastDir: string
@@ -177,6 +183,7 @@ export async function generateBatchAudio(
   success: boolean;
   audioFiles?: { [key: string]: string[] };
   individualFiles?: { [key: string]: string[] };
+  cdnUrls?: { [key: string]: string }; // Add CDN URLs to return type
   error?: string;
 }> {
   try {
@@ -205,7 +212,8 @@ export async function generateBatchAudio(
       return { 
         success: true, 
         audioFiles: data.audio_files, 
-        individualFiles: data.individual_files 
+        individualFiles: data.individual_files,
+        cdnUrls: data.cdn_urls // Include CDN URLs
       };
     } else {
       return { 

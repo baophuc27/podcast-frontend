@@ -9,17 +9,19 @@ interface UtteranceCardProps {
   item: PodcastData;
   index: number;
   audioUrl?: string;
+  cdnUrl?: string; // Add CDN URL prop
   onUpdate: (index: number, newContent: string) => void;
   onRegenerateAudio?: () => void;
   isRegenerating?: boolean;
   disableRegeneration?: boolean;
-  audioGenerating?: boolean; // Add this prop for audio generation status
+  audioGenerating?: boolean;
 }
 
 export default function UtteranceCard({ 
   item, 
   index, 
   audioUrl, 
+  cdnUrl, // New prop
   onUpdate,
   onRegenerateAudio,
   isRegenerating = false,
@@ -84,6 +86,22 @@ export default function UtteranceCard({
   const adjustTextareaHeight = (element: HTMLTextAreaElement) => {
     element.style.height = 'auto';
     element.style.height = `${element.scrollHeight}px`;
+  };
+
+  // Function to handle audio download - using the CDN URL directly
+  const handleDownloadAudio = () => {
+    // Prefer CDN URL if available, otherwise use local audioUrl
+    const downloadUrl = cdnUrl || audioUrl;
+    
+    if (!downloadUrl) {
+      console.log("No URL available for download");
+      return;
+    }
+    
+    console.log(`Opening download URL: ${downloadUrl}`);
+    
+    // Open the audio URL in a new tab - this is the same approach used in PodcastFinal
+    window.open(downloadUrl, '_blank');
   };
 
   // Get speaker style classes based on speaker type
@@ -239,25 +257,48 @@ export default function UtteranceCard({
               className="w-full" 
             />
             
-            {/* Show regenerate button only when not in generating state and we have audio */}
-            {audioUrl && !audioGenerating && onRegenerateAudio && (
-              <button
-                onClick={onRegenerateAudio}
-                disabled={disableRegeneration || isRegenerating}
-                className={`mt-3 p-2 rounded-md text-xs font-medium flex items-center justify-center transition-colors
-                  ${
-                    disableRegeneration || isRegenerating
+            {/* Audio utility buttons container */}
+            <div className="flex gap-2 mt-3">
+              {/* Download Button - Only show when CDN URL or audio is available */}
+              {(cdnUrl || audioUrl) && (
+                <button
+                  onClick={handleDownloadAudio}
+                  className={`p-2 rounded-md text-xs font-medium flex items-center justify-center transition-colors flex-1
+                    ${(!cdnUrl && !audioUrl)
                       ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                       : `${colorClass.lightBg} border ${colorClass.lightBorder} ${colorClass.text} hover:bg-gray-100 dark:hover:bg-gray-700`
-                  }
-                `}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Regenerate Audio
-              </button>
-            )}
+                    }
+                  `}
+                  disabled={!cdnUrl && !audioUrl}
+                  title={(cdnUrl || audioUrl) ? "Download audio" : "No audio available"}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </button>
+              )}
+              
+              {/* Show regenerate button only when not in generating state and we have audio */}
+              {audioUrl && !audioGenerating && onRegenerateAudio && (
+                <button
+                  onClick={onRegenerateAudio}
+                  disabled={disableRegeneration || isRegenerating}
+                  className={`p-2 rounded-md text-xs font-medium flex items-center justify-center transition-colors flex-1
+                    ${
+                      disableRegeneration || isRegenerating
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : `${colorClass.lightBg} border ${colorClass.lightBorder} ${colorClass.text} hover:bg-gray-100 dark:hover:bg-gray-700`
+                    }
+                  `}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Regenerate
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

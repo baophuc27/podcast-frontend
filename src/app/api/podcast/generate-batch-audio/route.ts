@@ -10,9 +10,8 @@ type GenerateBatchAudioPayload = {
   podcast_data: PodcastData[];
   podcast_dir: string;
 };
-
-// Function to process text using TTS API - Updated to use speed parameter
-async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null]> {
+// Modified processTTS function to store CDN URLs
+async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null, string | null]> {
   const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
   
   // Get proxy from environment
@@ -25,18 +24,21 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
   console.log(`NO_PROXY: ${process.env.NO_PROXY || "Not set"}`);
   
   if (!proxyUrl) {
-    console.warn('⚠️ WARNING: No proxy URL found in environment variables. TTS API call may fail.');
+    console.log('⚠️ WARNING: No proxy URL found in environment variables. Continuing without proxy.');
   } else {
     console.log(`✅ Using proxy for TTS API: ${proxyUrl}`);
   }
   
   try {
-    // Import node-fetch explicitly to ensure it works with the proxy correctly
+    // Import node-fetch explicitly
     const fetch = (await import('node-fetch')).default;
-    const { HttpsProxyAgent } = await import('https-proxy-agent');
     
-    // Create a properly configured HttpsProxyAgent
-    const proxyAgent = new HttpsProxyAgent(proxyUrl);
+    // Optional proxy agent - only create if proxyUrl exists
+    let proxyAgent;
+    if (proxyUrl) {
+      const { HttpsProxyAgent } = await import('https-proxy-agent');
+      proxyAgent = new HttpsProxyAgent(proxyUrl);
+    }
     
     // Prepare the request payload
     const payload = {
@@ -54,23 +56,30 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
       encode_type: 0
     })}`);
     
-    // Use node-fetch with explicit proxy agent
-    const response = await fetch(url, {
+    // Prepare fetch options
+    const fetchOptions: any = {
       method: 'POST',
-      agent: proxyAgent,
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
-    });
+    };
+    
+    // Only add proxy agent if it exists
+    if (proxyAgent) {
+      fetchOptions.agent = proxyAgent;
+    }
+    
+    // Use node-fetch with optional proxy agent
+    const response = await fetch(url, fetchOptions);
     
     console.log(`TTS API response status: ${response.status}`);
     
     if (!response.ok) {
       const errorDetail = await response.text().catch(e => "Could not read response body");
       console.error(`TTS API error: Status ${response.status}, Details: ${errorDetail}`);
-      return [false, `API responded with status: ${response.status}, Details: ${errorDetail}`];
+      return [false, `API responded with status: ${response.status}, Details: ${errorDetail}`, null];
     }
     
     const result = await response.json();
@@ -82,10 +91,14 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
       if (wavUrl) {
         console.log(`Downloading audio from: ${wavUrl}`);
         
-        // Use the same fetch and proxy agent for downloading the audio
-        const wavResponse = await fetch(wavUrl, {
-          agent: proxyAgent
-        });
+        // Prepare download options - only use agent if proxy exists
+        const downloadOptions: any = {};
+        if (proxyAgent) {
+          downloadOptions.agent = proxyAgent;
+        }
+        
+        // Use the same fetch and optional proxy agent for downloading the audio
+        const wavResponse = await fetch(wavUrl, downloadOptions);
         
         if (wavResponse.ok) {
           // Ensure the directory exists
@@ -108,15 +121,16 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
             console.warn(`Could not get file stats: ${err instanceof Error ? err.message : String(err)}`);
           }
           
-          return [true, null];
+          // Return success along with the CDN URL
+          return [true, null, wavUrl];
         } else {
           const errorDetail = await wavResponse.text().catch(e => "Could not read response body");
           console.error(`Failed to download WAV file: ${wavResponse.status}, Details: ${errorDetail}`);
-          return [false, `Failed to download WAV file: ${wavResponse.status}, Details: ${errorDetail}`];
+          return [false, `Failed to download WAV file: ${wavResponse.status}, Details: ${errorDetail}`, null];
         }
       } else {
         console.error("No URL found in the API response");
-        return [false, "No URL found in the API response"];
+        return [false, "No URL found in the API response", null];
       }
     } else {
       console.error(`❌ TTS API call failed with error code: ${result.error_code}`);
@@ -124,7 +138,7 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
       if (result.error_message) {
         console.error(`Error message: ${result.error_message}`);
       }
-      return [false, `API call failed: Error code ${result.error_code}, ${result.error_message || 'No error message provided'}`];
+      return [false, `API call failed: Error code ${result.error_code}, ${result.error_message || 'No error message provided'}`, null];
     }
   } catch (error) {
     console.error(`❌ Exception during TTS processing:`, error);
@@ -141,14 +155,14 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
       }
     }
     
-    return [false, `Error processing TTS: ${error instanceof Error ? error.message : String(error)}`];
+    return [false, `Error processing TTS: ${error instanceof Error ? error.message : String(error)}`, null];
   }
 }
 
-// Function to process a single utterance - No longer splits utterances
-async function processUtterance(podcastData: PodcastData[], idx: number, podcastDir: string): Promise<string[]> {
+// Updated processUtterance to store CDN URLs
+async function processUtterance(podcastData: PodcastData[], idx: number, podcastDir: string): Promise<{ localFiles: string[], cdnUrl?: string }> {
   if (!podcastData || idx >= podcastData.length) {
-    return [];
+    return { localFiles: [] };
   }
   
   // Get the item to process
@@ -184,16 +198,17 @@ async function processUtterance(podcastData: PodcastData[], idx: number, podcast
   
   // Process TTS for the full utterance with speed parameter
   console.log(`Processing full utterance for speaker ${speaker} at index ${idx}`);
-  const [success, error] = await processTTS(content, ttsSpeakerId, outputFile, speed);
+  const [success, error, cdnUrl] = await processTTS(content, ttsSpeakerId, outputFile, speed);
   
   if (success) {
-    return [outputFile];
+    return { localFiles: [outputFile], cdnUrl };
   } else {
     console.error(`Failed to process utterance ${idx}: ${error}`);
-    return [];
+    return { localFiles: [] };
   }
 }
 
+// Updated POST handler to include CDN URLs
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateBatchAudioPayload = await request.json();
@@ -211,26 +226,32 @@ export async function POST(request: NextRequest) {
     // Process each utterance
     const result: { [key: string]: string[] } = {};
     const individualFiles: { [key: string]: string[] } = {};
+    const cdnUrls: { [key: string]: string } = {}; // Add this to store CDN URLs
     
     for (let i = 0; i < body.podcast_data.length; i++) {
       const utterance = body.podcast_data[i];
       
       // Process this utterance
-      const audioFiles = await processUtterance(
+      const { localFiles, cdnUrl } = await processUtterance(
         body.podcast_data,
         i,
         podcastDir
       );
       
-      if (audioFiles.length > 0) {
+      if (localFiles.length > 0) {
         // Convert absolute paths to relative paths for the frontend
-        const relativePaths = audioFiles.map(file => {
+        const relativePaths = localFiles.map(file => {
           return file.replace(process.cwd(), '').replace(/\\/g, '/');
         });
         
         // Store in both formats
         result[`utterance_${i}`] = relativePaths;
         individualFiles[`${utterance.speaker}_${i}`] = relativePaths;
+        
+        // Store CDN URL if available
+        if (cdnUrl) {
+          cdnUrls[`utterance_${i}`] = cdnUrl;
+        }
       }
     }
     
@@ -238,6 +259,7 @@ export async function POST(request: NextRequest) {
       status_code: 0,
       audio_files: result,
       individual_files: individualFiles,
+      cdn_urls: cdnUrls, // Add this to the response
       podcast_dir: body.podcast_dir
     });
     
@@ -248,7 +270,8 @@ export async function POST(request: NextRequest) {
         status_code: -1,
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         audio_files: {},
-        individual_files: {}
+        individual_files: {},
+        cdn_urls: {}
       },
       { status: 500 }
     );

@@ -4,6 +4,7 @@ export type PodcastData = {
   speaker: string;
   content: string;
   speakerProfile?: SpeakerProfile; // Add optional speakerProfile property
+  cdnUrl?: string;
 };
 
 // Ensure we add speed to SpeakerProfile
@@ -28,9 +29,9 @@ export type APIResponse = {
   individual_files?: { [key: string]: string[] };
   full_audio_path?: string;
   podcast_dir?: string; 
+  cdn_urls?: { [key: string]: string }; // Add CDN URLs map
   error?: string;
 };
-
 // Updated PodcastGenerationPayload to include the new podcast types
 export type PodcastGenerationPayload = {
   input_urls: string[];

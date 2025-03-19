@@ -1,7 +1,7 @@
-// src/components/podcast/PodcastScript.tsx
+// src/components/podcast/PodcastScript.tsx - Updated to handle CDN URLs
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PodcastData } from '@/types/podcast';
 import UtteranceCard from './UtteranceCard';
 import { generateScriptContent, createDownloadLink } from '@/lib/utils/podcast';
@@ -10,24 +10,27 @@ import { regenerateUtterance } from '@/lib/api/podcast';
 interface PodcastScriptProps {
   podcastData: PodcastData[];
   audioFiles?: { [key: string]: string[] };
+  cdnUrls?: { [key: string]: string }; // Add cdnUrls prop
   podcastDir?: string;
   onUpdate: (index: number, newContent: string) => void;
   onGenerateFinal: () => void;
   loading: boolean;
-  audioGenerating?: boolean; // Add this prop for audio generation status
+  audioGenerating?: boolean;
 }
 
 export default function PodcastScript({
   podcastData,
   audioFiles = {},
+  cdnUrls = {}, // Initialize with empty object
   podcastDir = '',
   onUpdate,
   onGenerateFinal,
   loading,
-  audioGenerating = false // Default to false if not provided
+  audioGenerating = false
 }: PodcastScriptProps) {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [updatedAudioFiles, setUpdatedAudioFiles] = useState<{ [key: string]: string[] }>({});
+  const [updatedCdnUrls, setUpdatedCdnUrls] = useState<{ [key: string]: string }>({});
   const [directoryStatus, setDirectoryStatus] = useState<'valid' | 'invalid' | 'checking'>('checking');
   const [error, setError] = useState<string | null>(null);
   const [effectivePodcastDir, setEffectivePodcastDir] = useState<string>('');
@@ -50,10 +53,18 @@ export default function PodcastScript({
     if (audioFiles) {
       console.log("Initial audioFiles:", Object.keys(audioFiles).length);
     }
+    
+    // Debug logging for CDN URLs
+    if (cdnUrls) {
+      console.log("Initial CDN URLs:", Object.keys(cdnUrls).length);
+    }
   }, []); // Empty dependency array means this only runs once on mount
   
   // Use the combined audio files (original + any updates)
   const currentAudioFiles = { ...audioFiles, ...updatedAudioFiles };
+  
+  // Use the combined CDN URLs (original + any updates)
+  const currentCdnUrls = { ...cdnUrls, ...updatedCdnUrls };
 
   const handleDownloadScript = () => {
     const scriptContent = generateScriptContent(podcastData);
@@ -73,16 +84,24 @@ export default function PodcastScript({
     
     try {
       // Call the API to regenerate this utterance
-      const newAudioFiles = await regenerateUtterance(podcastData, index, effectivePodcastDir);
+      const result = await regenerateUtterance(podcastData, index, effectivePodcastDir);
       
-      console.log("Regenerated audio files:", newAudioFiles);
+      console.log("Regenerated audio files:", result);
       
-      if (newAudioFiles.length > 0) {
+      if (result.audioFiles && result.audioFiles.length > 0) {
         // Update the audio files for this utterance
         setUpdatedAudioFiles(prev => ({
           ...prev,
-          [`utterance_${index}`]: newAudioFiles
+          [`utterance_${index}`]: result.audioFiles
         }));
+        
+        // Update CDN URL if available
+        if (result.cdnUrl) {
+          setUpdatedCdnUrls(prev => ({
+            ...prev,
+            [`utterance_${index}`]: result.cdnUrl
+          }));
+        }
       } else {
         setError("No audio files were returned. The regeneration may have failed.");
       }
@@ -151,6 +170,7 @@ export default function PodcastScript({
             item={item}
             index={idx}
             audioUrl={currentAudioFiles[`utterance_${idx}`]?.[0] || ''}
+            cdnUrl={currentCdnUrls[`utterance_${idx}`] || ''} // Pass CDN URL
             onUpdate={onUpdate}
             onRegenerateAudio={() => handleRegenerateAudio(idx)}
             isRegenerating={regeneratingIndex === idx}

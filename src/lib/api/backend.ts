@@ -51,7 +51,10 @@ export async function callBackendService({
     // Add proxy agent if proxy URL exists and useProxy is true
     if (useProxy && proxyUrl) {
       console.log(`Using proxy for backend call: ${proxyUrl}`);
+      const { HttpsProxyAgent } = await import('https-proxy-agent');
       fetchOptions.agent = new HttpsProxyAgent(proxyUrl);
+    } else {
+      console.log(`No proxy used for backend call to: ${url}`);
     }
 
     console.log(`Attempting to connect to backend at: ${url}`);
