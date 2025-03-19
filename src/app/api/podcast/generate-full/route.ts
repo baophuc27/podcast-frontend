@@ -12,10 +12,10 @@ type GenerateFullPayload = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: GenerateFullPayload = await request.json();
+    // Get the raw request body
+    const rawBody = await request.json();
     
-    console.log("Generate full podcast API route called with:", 
-      Array.isArray(body) ? body.length : body.podcast_data.length, "utterances");
+    console.log("Generate full podcast API route called with raw body:", rawBody);
     
     // Log proxy settings for debugging
     console.log("Proxy environment variables:");
@@ -23,17 +23,37 @@ export async function POST(request: NextRequest) {
     console.log("HTTPS_PROXY:", process.env.HTTPS_PROXY || "Not set");
     console.log("NO_PROXY:", process.env.NO_PROXY || "Not set");
     
-    // Handle different payload formats - either an array of podcast data or an object with podcast_data
+    // Handle different payload formats:
+    // 1. Direct array format (coming from curl): [{"speaker":"MC1","content":"..."}]
+    // 2. Object with podcast_data: { podcast_data: [...], podcast_dir: "..." }
     let podcastData: PodcastData[];
     let podcastDir: string | undefined;
     
-    if (Array.isArray(body)) {
-      // Legacy format - just an array of podcast data
-      podcastData = body;
+    if (Array.isArray(rawBody)) {
+      // Format 1: Direct array (from curl)
+      console.log("Received direct array format");
+      podcastData = rawBody;
     } else {
-      // New format - object with podcast_data and optional podcast_dir
-      podcastData = body.podcast_data;
-      podcastDir = body.podcast_dir;
+      // Format 2: Object with podcast_data property
+      console.log("Received object format with podcast_data property");
+      if (!rawBody.podcast_data || !Array.isArray(rawBody.podcast_data)) {
+        throw new Error("Invalid podcast_data format");
+      }
+      podcastData = rawBody.podcast_data;
+      podcastDir = rawBody.podcast_dir;
+    }
+    
+    // Ensure podcastData is valid and properly formatted
+    if (!podcastData || !Array.isArray(podcastData) || podcastData.length === 0) {
+      console.error("Invalid podcast data format:", podcastData);
+      return Response.json(
+        { 
+          status_code: -1,
+          error: "Invalid podcast data format. Expected array of podcast utterances.",
+          data: null
+        },
+        { status: 400 }
+      );
     }
     
     if (podcastDir) {
@@ -47,10 +67,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Prepare the payload for the backend service
-    const payload = podcastDir 
-      ? { podcast_data: podcastData, podcast_dir: podcastDir }
-      : podcastData;
+    // IMPORTANT: Always send podcastData as a direct array to match the curl example
+    // The backend API expects an array of podcast utterances: [{"speaker":"MC1","content":"..."}]
+    const payload = podcastData;
+    
+    console.log("Sending payload to backend service:", 
+      `Array with ${payload.length} items`);
     
     // For full podcast generation, we call the dedicated gen-audio service
     // directly on the specific host

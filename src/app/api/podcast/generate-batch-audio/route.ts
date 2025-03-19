@@ -15,52 +15,77 @@ type GenerateBatchAudioPayload = {
 async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null]> {
   const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
   
-  // Check for proxy environment variables
-  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  // Get proxy from environment
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || 
+                  process.env.https_proxy || process.env.http_proxy;
   
-  // Create fetch options
-  const fetchOptions: any = {
-    method: 'POST',
-    headers: {
-      'accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  console.log(`=== PROXY CONFIGURATION ===`);
+  console.log(`HTTP_PROXY: ${process.env.HTTP_PROXY || "Not set"}`);
+  console.log(`HTTPS_PROXY: ${process.env.HTTPS_PROXY || "Not set"}`);
+  console.log(`NO_PROXY: ${process.env.NO_PROXY || "Not set"}`);
+  
+  if (!proxyUrl) {
+    console.warn('⚠️ WARNING: No proxy URL found in environment variables. TTS API call may fail.');
+  } else {
+    console.log(`✅ Using proxy for TTS API: ${proxyUrl}`);
+  }
+  
+  try {
+    // Import node-fetch explicitly to ensure it works with the proxy correctly
+    const fetch = (await import('node-fetch')).default;
+    const { HttpsProxyAgent } = await import('https-proxy-agent');
+    
+    // Create a properly configured HttpsProxyAgent
+    const proxyAgent = new HttpsProxyAgent(proxyUrl);
+    
+    // Prepare the request payload
+    const payload = {
       text: text,
       speed: Math.max(0.5, Math.min(1.5, speed)),
       speaker_id: speakerId,
       encode_type: 0
-    })
-  };
-  
-  // Add proxy agent if proxy URL exists
-  if (proxyUrl) {
-    console.log(`Using proxy: ${proxyUrl}`);
-    fetchOptions.agent = new HttpsProxyAgent(proxyUrl);
-  }
-  
-  try {
-    // Make request to TTS API
-    const response = await fetch(url, fetchOptions);
+    };
+    
+    console.log(`Sending TTS request for speaker ${speakerId} with speed ${speed}`);
+    console.log(`Request payload: ${JSON.stringify({
+      text: text.substring(0, 100) + "..." + (text.length > 100 ? ` (${text.length} chars total)` : ""),
+      speed: Math.max(0.5, Math.min(1.5, speed)),
+      speaker_id: speakerId,
+      encode_type: 0
+    })}`);
+    
+    // Use node-fetch with explicit proxy agent
+    const response = await fetch(url, {
+      method: 'POST',
+      agent: proxyAgent,
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    console.log(`TTS API response status: ${response.status}`);
     
     if (!response.ok) {
-      return [false, `API responded with status: ${response.status}`];
+      const errorDetail = await response.text().catch(e => "Could not read response body");
+      console.error(`TTS API error: Status ${response.status}, Details: ${errorDetail}`);
+      return [false, `API responded with status: ${response.status}, Details: ${errorDetail}`];
     }
     
     const result = await response.json();
+    console.log(`TTS API response: ${JSON.stringify(result, null, 2)}`);
     
     if (result.error_code === 0) {
       // Download the WAV file
       const wavUrl = result.url;
       if (wavUrl) {
-        const wavFetchOptions: any = {};
+        console.log(`Downloading audio from: ${wavUrl}`);
         
-        // Add proxy agent if proxy URL exists
-        if (proxyUrl) {
-          wavFetchOptions.agent = new HttpsProxyAgent(proxyUrl);
-        }
-        
-        const wavResponse = await fetch(wavUrl, wavFetchOptions);
+        // Use the same fetch and proxy agent for downloading the audio
+        const wavResponse = await fetch(wavUrl, {
+          agent: proxyAgent
+        });
         
         if (wavResponse.ok) {
           // Ensure the directory exists
@@ -68,21 +93,54 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
           fs.mkdirSync(dir, { recursive: true });
           
           // Get the audio file content
-          const audioBuffer = Buffer.from(await wavResponse.arrayBuffer());
+          const arrayBuffer = await wavResponse.arrayBuffer();
+          const audioBuffer = Buffer.from(arrayBuffer);
           
           // Write the file
           fs.writeFileSync(outputFilename, audioBuffer);
+          console.log(`✅ Audio saved to: ${outputFilename}`);
+          
+          // Get file size for debugging
+          try {
+            const stats = fs.statSync(outputFilename);
+            console.log(`Generated audio file size: ${(stats.size / 1024).toFixed(2)} KB`);
+          } catch (err) {
+            console.warn(`Could not get file stats: ${err instanceof Error ? err.message : String(err)}`);
+          }
+          
           return [true, null];
         } else {
-          return [false, `Failed to download WAV file: ${wavResponse.status}`];
+          const errorDetail = await wavResponse.text().catch(e => "Could not read response body");
+          console.error(`Failed to download WAV file: ${wavResponse.status}, Details: ${errorDetail}`);
+          return [false, `Failed to download WAV file: ${wavResponse.status}, Details: ${errorDetail}`];
         }
       } else {
+        console.error("No URL found in the API response");
         return [false, "No URL found in the API response"];
       }
     } else {
-      return [false, `API call failed: ${JSON.stringify(result)}`];
+      console.error(`❌ TTS API call failed with error code: ${result.error_code}`);
+      console.error(`Error details: ${JSON.stringify(result)}`);
+      if (result.error_message) {
+        console.error(`Error message: ${result.error_message}`);
+      }
+      return [false, `API call failed: Error code ${result.error_code}, ${result.error_message || 'No error message provided'}`];
     }
   } catch (error) {
+    console.error(`❌ Exception during TTS processing:`, error);
+    
+    // More detailed error information
+    if (error instanceof Error) {
+      console.error(`Error name: ${error.name}`);
+      console.error(`Error message: ${error.message}`);
+      console.error(`Error stack: ${error.stack}`);
+      
+      // Network errors often have a 'cause' property
+      if ('cause' in error) {
+        console.error(`Error cause:`, (error as any).cause);
+      }
+    }
+    
     return [false, `Error processing TTS: ${error instanceof Error ? error.message : String(error)}`];
   }
 }
