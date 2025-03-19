@@ -4,6 +4,7 @@ import { PodcastData } from '@/types/podcast';
 import * as fs from 'fs';
 import * as path from 'path';
 import { splitLongUtterance } from '@/lib/utils/podcast';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 type GenerateBatchAudioPayload = {
   podcast_data: PodcastData[];
@@ -14,29 +15,33 @@ type GenerateBatchAudioPayload = {
 async function processTTS(text: string, speakerId: number, outputFilename: string, speed: number = 1.0): Promise<[boolean, string | null]> {
   const url = 'https://kiki-tts-engine.tts.zalo.ai/generate_audio';
   
-  // Ensure speed is within valid range (0.5 to 1.5)
-  const validSpeed = Math.max(0.5, Math.min(1.5, speed));
+  // Check for proxy environment variables
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   
-  // Log the speed being used
-  console.log(`Processing TTS with speed: ${validSpeed} for speaker ID: ${speakerId}`);
-  
-  const payload = {
-    text: text,
-    speed: validSpeed, // Use the provided speed parameter
-    speaker_id: speakerId,
-    encode_type: 0
+  // Create fetch options
+  const fetchOptions: any = {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: text,
+      speed: Math.max(0.5, Math.min(1.5, speed)),
+      speaker_id: speakerId,
+      encode_type: 0
+    })
   };
+  
+  // Add proxy agent if proxy URL exists
+  if (proxyUrl) {
+    console.log(`Using proxy: ${proxyUrl}`);
+    fetchOptions.agent = new HttpsProxyAgent(proxyUrl);
+  }
   
   try {
     // Make request to TTS API
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    const response = await fetch(url, fetchOptions);
     
     if (!response.ok) {
       return [false, `API responded with status: ${response.status}`];
@@ -48,7 +53,14 @@ async function processTTS(text: string, speakerId: number, outputFilename: strin
       // Download the WAV file
       const wavUrl = result.url;
       if (wavUrl) {
-        const wavResponse = await fetch(wavUrl);
+        const wavFetchOptions: any = {};
+        
+        // Add proxy agent if proxy URL exists
+        if (proxyUrl) {
+          wavFetchOptions.agent = new HttpsProxyAgent(proxyUrl);
+        }
+        
+        const wavResponse = await fetch(wavUrl, wavFetchOptions);
         
         if (wavResponse.ok) {
           // Ensure the directory exists

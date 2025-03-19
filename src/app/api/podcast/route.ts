@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       endpoint: 'generate_podcast_from_urls',
       payload: body,
       timeout: 300000, // 5 minute timeout for the main podcast generation
-      host: 'http://localhost:8172' // Explicitly using the main backend host
+      host: 'http://10.30.78.37:8172' // Explicitly using the main backend host
     });
     
   } catch (error) {

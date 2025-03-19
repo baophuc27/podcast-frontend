@@ -17,6 +17,12 @@ export async function POST(request: NextRequest) {
     console.log("Generate full podcast API route called with:", 
       Array.isArray(body) ? body.length : body.podcast_data.length, "utterances");
     
+    // Log proxy settings for debugging
+    console.log("Proxy environment variables:");
+    console.log("HTTP_PROXY:", process.env.HTTP_PROXY || "Not set");
+    console.log("HTTPS_PROXY:", process.env.HTTPS_PROXY || "Not set");
+    console.log("NO_PROXY:", process.env.NO_PROXY || "Not set");
+    
     // Handle different payload formats - either an array of podcast data or an object with podcast_data
     let podcastData: PodcastData[];
     let podcastDir: string | undefined;
@@ -52,7 +58,8 @@ export async function POST(request: NextRequest) {
       endpoint: 'gen-audio',  // This endpoint matches your Python code
       payload: payload,
       timeout: 120000, // 2 minute timeout for full audio generation
-      host: 'http://10.30.78.48:8282' // Explicitly using the full podcast gen host
+      host: 'http://10.30.78.48:8282', // Explicitly using the full podcast gen host
+      useProxy: true // Add this flag to explicitly enable proxy support
     });
     
   } catch (error) {
