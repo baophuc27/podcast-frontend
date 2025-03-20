@@ -284,7 +284,10 @@ export default function PodcastGenerator() {
         />
 
         {generatedFinal && (
-          <PodcastFinal audioUrl={finalAudioUrl} />
+          <PodcastFinal 
+            audioUrl={finalAudioUrl} 
+            podcastData={editedPodcastData} 
+          />
         )}
       </>
     )}

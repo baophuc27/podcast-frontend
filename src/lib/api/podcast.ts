@@ -229,3 +229,45 @@ export async function generateBatchAudio(
     };
   }
 }
+
+export async function submitToProduction(
+  podcastData: PodcastData[],
+  category: string,
+  finalAudioUrl: string,
+  publishDate: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    console.log(`Submitting podcast to production with category: ${category} and publish date: ${publishDate}`);
+    
+    const payload = {
+      podcastData,
+      category,
+      finalAudioUrl,
+      publishDate
+    };
+    
+    const response = await fetch('/api/podcast/submit-to-production', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API call failed with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Submit to production response:", data);
+    
+    return { 
+      success: true, 
+      data: data.data 
+    };
+  } catch (error) {
+    console.error('Error submitting podcast to production:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+}
