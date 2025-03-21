@@ -1,20 +1,19 @@
-version: '3.8'
-
+version: '3'
 services:
-  frontend:
+  podcast_gui:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
-      - "${PORT:-3030}:3000"
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - podcast_audio:/app/podcast_audio
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "9110:3000"
     restart: unless-stopped
-
-volumes:
-  podcast_audio:
-    driver: local
+    environment:
+      - http_proxy=http://10.60.28.99:81
+      - https_proxy=http://10.60.28.99:81
+      - HTTP_PROXY=http://10.60.28.99:81
+      - HTTPS_PROXY=http://10.60.28.99:81
+    networks:
+      - podcast_network
+networks:
+  podcast_network:
+    driver: bridge
