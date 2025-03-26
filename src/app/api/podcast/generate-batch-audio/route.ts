@@ -188,8 +188,21 @@ async function processUtterance(podcastData: PodcastData[], idx: number, podcast
       speed = item.speakerProfile.speed;
       console.log(`Using MC2 speaker speed from profile: ${speed}`);
     }
+  } else if (speaker.includes("MC3")) {
+    ttsSpeakerId = 3; // Male voice
+    // Check if there's a speed property in speaker data
+    if (item.speakerProfile && typeof item.speakerProfile.speed === 'number') {
+      speed = item.speakerProfile.speed;
+      console.log(`Using MC3 speaker speed from profile: ${speed}`);
+    }
+  } else if (speaker.includes("MC4")) {
+    ttsSpeakerId = 4; // Male voice
+    // Check if there's a speed property in speaker data
+    if (item.speakerProfile && typeof item.speakerProfile.speed === 'number') {
+      speed = item.speakerProfile.speed;
+      console.log(`Using MC3 speaker speed from profile: ${speed}`);
+    }
   }
-  
   // No longer splitting content into chunks - process the entire content at once
   const outputFile = path.join(
     podcastDir, 

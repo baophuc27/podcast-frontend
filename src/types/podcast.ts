@@ -3,6 +3,7 @@
 export type PodcastData = {
   speaker: string;
   content: string;
+  speed?: number;
   speakerProfile?: SpeakerProfile; // Add optional speakerProfile property
   cdnUrl?: string;
 };
