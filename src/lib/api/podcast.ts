@@ -131,7 +131,8 @@ export async function generateFullPodcastAudio(
       
       return {
         speaker: formattedSpeaker,
-        content: item.content
+        content: item.content,
+        speed: 1.0
       };
     });
     

@@ -6,7 +6,7 @@ import { callBackendService } from '@/lib/api/backend';
 export async function POST(request: NextRequest) {
   try {
     const body: PodcastGenerationPayload = await request.json();
-    
+
     // Use the centralized backend service caller with the script generation endpoint
     // This uses the main backend host (localhost:8172)
     return callBackendService({
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       timeout: 300000, // 5 minute timeout for the main podcast generation
       host: 'http://10.30.78.37:8172' // Explicitly using the main backend host
     });
-    
+
   } catch (error) {
     console.error('Error in podcast generation API route:', error);
     return Response.json(
